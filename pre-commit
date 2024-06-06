@@ -27,21 +27,21 @@ if test -z "$gofiles"; then
 fi
 
 echo -n 'formatting...'
-gofmt -l "$gofiles" >"$tmpfile" 2>&1
+gofmt -l $gofiles >"$tmpfile" 2>&1
 echo -en "\r\e[K"
 if test -s "$tmpfile"; then
   echo "Error: gofmt failed for these files:"
   cat "$tmpfile"
-  exit
+  exit 1
 fi
 
 echo -n 'linting...'
-revive "$gofiles" >"$tmpfile" 2>&1
+revive $gofiles >"$tmpfile" 2>&1
 echo -en "\r\e[K"
 if test -s "$tmpfile"; then
-  echo "Error: revive failed for these files:"
+  echo "Error: revive failed:"
   cat "$tmpfile"
-  exit
+  exit 1
 fi
 
 echo -n 'testing...'
@@ -49,9 +49,9 @@ go test ./... >"$tmpfile" 2>&1
 result="$?"
 echo -en "\r\e[K"
 if test "$result" -ne 0; then
-  echo 'Error: tests failed, use notests=1 to skip, go test ./...:'
+  echo 'Error: tests failed, go test ./...:'
   cat "$tmpfile"
-  exit "$result"
+  exit 1
 fi
 
 rm "$tmpfile"
