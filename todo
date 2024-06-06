@@ -1,0 +1,2 @@
+- marshal: implement unmarsalbinary
+- marshal: add encode/decode test
