@@ -16,7 +16,7 @@ fi
 allfiles="$(git diff-index --name-only --cached HEAD)"
 gofiles="$(git diff-index --name-only --cached HEAD | grep '\.go$' || true)"
 
-if test -z "$noxx" && grep -Hi xx""x $allfiles; then
+if test -z "$noxx" && grep -Hni xx""x $allfiles; then
   echo "Error: found xx""x comment, check if it was intended to commit, use noxx=1 envvar to skip."
   exit 1
 fi
