@@ -13,6 +13,9 @@ import (
 var run func(name string, es marshal.Entries)
 
 func stringify(v any) string {
+	if s, ok := v.(fmt.Stringer); ok {
+		return s.String()
+	}
 	if bs, ok := v.([]byte); ok {
 		return string(bs)
 	}
