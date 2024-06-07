@@ -1,2 +1,1 @@
-- marshal: implement unmarsalbinary
-- marshal: add encode/decode test
+- flag: add -template=key flag for choosing a "template" to use on lhs side for new rhs keys instead of the empty value
