@@ -12,13 +12,20 @@ import (
 // Overrideable for testing purposes.
 var run func(name string, es marshal.Entries)
 
+func stringify(v any) string {
+	if bs, ok := v.([]byte); ok {
+		return string(bs)
+	}
+	return fmt.Sprint(v)
+}
+
 // Run writes/diffs the effdump named `name`.
 // This is meant to be overtake the main() function once the effect map is computed.
 // Its behavior is dependent on the command line, see the package comment.
 func Run[M ~map[K]V, K comparable, V any](name string, effects M) {
 	es := make(marshal.Entries, 0, len(effects))
 	for k, v := range effects {
-		es = append(es, marshal.Entry{fmt.Sprint(k), fmt.Sprint(v)})
+		es = append(es, marshal.Entry{stringify(k), stringify(v)})
 	}
 	slices.SortFunc(es, func(a, b marshal.Entry) int { return cmp.Compare(a.Key, b.Key) })
 	run(name, es)
