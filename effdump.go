@@ -19,14 +19,29 @@ func stringify(v any) string {
 	return fmt.Sprint(v)
 }
 
+// Dump represesents an effdump.
+type Dump struct {
+	es marshal.Entries
+}
+
+// Add adds a key value into the dump.
+func (d *Dump) Add(key, value any) {
+	d.es = append(d.es, marshal.Entry{stringify(key), stringify(value)})
+}
+
+// AddMap adds each entry of the map to the dump.
+// It's a standalone method due to a Go limitation around generics.
+func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
+	d.es = slices.Grow(d.es, len(m))
+	for k, v := range m {
+		d.Add(k, v)
+	}
+}
+
 // Run writes/diffs the effdump named `name`.
 // This is meant to be overtake the main() function once the effect map is computed.
 // Its behavior is dependent on the command line, see the package comment.
-func Run[M ~map[K]V, K comparable, V any](name string, effects M) {
-	es := make(marshal.Entries, 0, len(effects))
-	for k, v := range effects {
-		es = append(es, marshal.Entry{stringify(k), stringify(v)})
-	}
-	slices.SortFunc(es, func(a, b marshal.Entry) int { return cmp.Compare(a.Key, b.Key) })
-	run(name, es)
+func (d *Dump) Run(name string) {
+	slices.SortFunc(d.es, func(a, b marshal.Entry) int { return cmp.Compare(a.Key, b.Key) })
+	run(name, d.es)
 }
