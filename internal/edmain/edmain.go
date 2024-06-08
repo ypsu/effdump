@@ -20,14 +20,23 @@ type Params struct {
 	Name           string
 	Effects        []effect.Effect
 	Stdout         io.Writer
-	Flagset        *flag.FlagSet
 	Env            []string
 	FetchVersion   func(context.Context) (version string, clean bool, err error)
 	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
 
+	// Flags.
+	Args  []string
+	Force *bool
+
+	// Internal helper vars.
 	cachedir string // the user's cache directory
 	version  string // the baseline version of the source
 	clean    bool   // whether the working dir is clean
+}
+
+// RegisterFlags registers effdump's flags into a flagset.
+func (p *Params) RegisterFlags(fs *flag.FlagSet) {
+	p.Force = fs.Bool("force", false, "Force a save even from unclean directory.")
 }
 
 func isIdentifier(v string) bool {
@@ -44,7 +53,7 @@ func isIdentifier(v string) bool {
 
 func (p *Params) cmdSave(_ context.Context) error {
 	// TODO: allow disabling this with a flag.
-	if !p.clean {
+	if !p.clean && !*p.Force {
 		return fmt.Errorf("edmain clean check: saving from unclean workdir not allowed unless the -force flag is set")
 	}
 
@@ -69,9 +78,6 @@ func (p *Params) cmdSave(_ context.Context) error {
 // Run runs effdump's main CLI logic.
 func (p *Params) Run(ctx context.Context) error {
 	var err error
-	if !p.Flagset.Parsed() {
-		return fmt.Errorf("edmain check flagset: flagset not parsed")
-	}
 	p.cachedir, err = os.UserCacheDir()
 	if err != nil {
 		return fmt.Errorf("edmain get cachedir: %v", err)
@@ -84,8 +90,10 @@ func (p *Params) Run(ctx context.Context) error {
 		return fmt.Errorf("edmain check version: %q is not a short alphanumeric identifier", p.version)
 	}
 
-	subcommand := p.Flagset.Arg(0)
-	if subcommand == "" {
+	var subcommand string
+	if len(p.Args) >= 1 {
+		subcommand = p.Args[0]
+	} else {
 		if p.clean {
 			fmt.Fprintln(p.Stdout, `NOTE: subcommand not given, picking "save" because working dir is clean.`)
 			subcommand = "save"

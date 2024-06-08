@@ -14,25 +14,32 @@ import (
 )
 
 // Dump represesents an effdump.
-type Dump struct {
-	effects       []effect.Effect
-	versionSystem VersionSystem
+type Dump edmain.Params
+
+func (d *Dump) params() *edmain.Params {
+	return (*edmain.Params)(d)
 }
 
 // New initializes a new Dump.
-func New() *Dump {
-	return &Dump{}
+func New(name string) *Dump {
+	d := &Dump{
+		Name:   name,
+		Stdout: os.Stdout,
+		Env:    os.Environ(),
+	}
+	d.params().RegisterFlags(flag.CommandLine)
+	return d
 }
 
 // Add adds a key value into the dump.
 func (d *Dump) Add(key, value any) {
-	d.effects = append(d.effects, effect.Effect{effect.Stringify(key), effect.Stringify(value)})
+	d.Effects = append(d.Effects, effect.Effect{effect.Stringify(key), effect.Stringify(value)})
 }
 
 // AddMap adds each entry of the map to the dump.
 // It's a standalone method due to a Go limitation around generics.
 func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
-	d.effects = slices.Grow(d.effects, len(m))
+	d.Effects = slices.Grow(d.Effects, len(m))
 	for k, v := range m {
 		d.Add(k, v)
 	}
@@ -41,22 +48,13 @@ func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
 // Run writes/diffs the effdump named `name`.
 // This is meant to be overtake the main() function once the effect map is computed, this function never returns.
 // Its behavior is dependent on the command line, see the package comment.
-func (d *Dump) Run(name string) {
+func (d *Dump) Run(ctx context.Context) {
 	flag.Parse()
-	if d.versionSystem == nil {
-		d.versionSystem = git.New()
+	d.Args = flag.Args()
+	if d.FetchVersion == nil {
+		d.SetVersionSystem(git.New())
 	}
-
-	err := (&edmain.Params{
-		Name:           name,
-		Effects:        d.effects,
-		Stdout:         os.Stdout,
-		Flagset:        flag.CommandLine,
-		Env:            os.Environ(),
-		FetchVersion:   d.versionSystem.Fetch,
-		ResolveVersion: d.versionSystem.Resolve,
-	}).Run(context.Background())
-	if err != nil {
+	if err := d.params().Run(ctx); err != nil {
 		fmt.Fprintf(os.Stderr, "effdump failed: %v.\n", err)
 		os.Exit(1)
 	}
@@ -73,5 +71,6 @@ type VersionSystem interface {
 // SetVersionSystem overrides the version control system effdump uses.
 // The default is git if this function isn't called.
 func (d *Dump) SetVersionSystem(vs VersionSystem) {
-	d.versionSystem = vs
+	d.FetchVersion = vs.Fetch
+	d.ResolveVersion = vs.Resolve
 }

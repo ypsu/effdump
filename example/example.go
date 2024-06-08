@@ -6,6 +6,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -58,7 +59,7 @@ func seq(seq ...func(*config)) func(*config) {
 }
 
 func run() error {
-	d := effdump.New()
+	d := effdump.New("example-deployment-config")
 
 	// add computes and saves deployment config based on a list of config overrides.
 	add := func(name string, overrides ...func(*config)) {
@@ -113,7 +114,7 @@ func run() error {
 		cpuRate(8), memGB(64),
 	)
 
-	d.Run("example-deployment-config")
+	d.Run(context.Background())
 	return nil
 }
 
