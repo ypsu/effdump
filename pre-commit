@@ -13,8 +13,8 @@ if test "$1" = install; then
   exit
 fi
 
-allfiles="$(git diff-index --name-only --cached HEAD)"
-gofiles="$(git diff-index --name-only --cached HEAD | grep '\.go$' || true)"
+allfiles="$(git diff-index --name-only --diff-filter=d --cached HEAD)"
+gofiles="$(git diff-index --name-only --diff-filter=d --cached HEAD | grep '\.go$' || true)"
 
 if test -z "$allfiles"; then
   # No changed files, no checks to do.
