@@ -8,98 +8,110 @@ package main
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/ypsu/effdump"
 )
 
-type settings map[string]string
+type config struct {
+	Active     bool
+	Name       string
+	Zone       string
+	BinaryFile string
+	CPURate    float64
+	MemGB      float64
+	Alerting   bool
 
-// mk makes a new settings based on a series overrides.
-func mk(overrides ...settings) settings {
-	r := settings{}
-	for _, o := range overrides {
-		for k, v := range o {
-			if v == "" {
-				delete(r, k)
-			} else {
-				r[k] = v
-			}
-		}
-	}
-	return r
+	// Error, if non-empty, the config is invalid.
+	Error string
 }
 
-func atoi(s string) int {
-	v, err := strconv.Atoi(s)
-	if err != nil {
-		return -1
+func reset(v config) func(*config) {
+	return func(c *config) { *c = v }
+}
+func active(v bool) func(*config) {
+	return func(c *config) { c.Active = v }
+}
+func name(v string) func(*config) {
+	return func(c *config) { c.Name = v }
+}
+func zone(v string) func(*config) {
+	return func(c *config) { c.Zone = v }
+}
+func binaryFile(v string) func(*config) {
+	return func(c *config) { c.BinaryFile = v }
+}
+func cpuRate(v float64) func(*config) {
+	return func(c *config) { c.CPURate = v }
+}
+func memGB(v float64) func(*config) {
+	return func(c *config) { c.MemGB = v }
+}
+func alerting(v bool) func(*config) {
+	return func(c *config) { c.Alerting = v }
+}
+func seq(seq ...func(*config)) func(*config) {
+	return func(c *config) {
+		for _, fn := range seq {
+			fn(c)
+		}
 	}
-	return v
 }
 
 func run() error {
 	d := effdump.New()
 
-	// add computes and saves the settings for a deployment based on a list of settings overrides.
-	add := func(name string, overrides ...settings) {
-		// Make variable substitutions.
-		ss := mk(overrides...)
-		for k, v := range ss {
-			switch v {
-			case "$NAME":
-				ss[k] = name
-			}
+	// add computes and saves deployment config based on a list of config overrides.
+	add := func(name string, overrides ...func(*config)) {
+		// Apply the overrides.
+		cfg := &config{}
+		for _, o := range overrides {
+			o(cfg)
 		}
 
-		if ss["active"] == "false" {
-			d.Add(name, ss)
+		// Resolve late stage references in select fields.
+		if cfg.Name == "$NAME" {
+			cfg.Name = name
+		}
+
+		if !cfg.Active {
+			d.Add(name, cfg)
 			return
 		}
 
-		// Sanity check the active config.
-		if got, want := atoi(ss["memory_limit"]), 32; got < want {
-			ss["error"] += fmt.Sprintf("memory_limit = %d, want at least %d\n", got, want)
+		// Sanity check the active configs.
+		if got, want := cfg.MemGB, 32.0; got < want {
+			cfg.Error += fmt.Sprintf("MemGB = %0.3f, want at least %.0f\n", got, want)
 		}
-		if ss["zone"] == "" {
-			ss["error"] += fmt.Sprintf("missing zone\n")
+		if cfg.Zone == "" {
+			cfg.Error += fmt.Sprintf("missing zone\n")
 		}
 
-		d.Add(name, ss)
+		d.Add(name, *cfg)
 	}
 
-	template := settings{
-		"active":       "false",
-		"name":         "$NAME",
-		"binary":       "examplebinary/prod",
-		"cpu_limit":    "4",
-		"memory_limit": "32",
-		"send_alerts":  "false",
-	}
-	prod := settings{
-		"active":      "true",
-		"send_alerts": "true",
-	}
-	euZone := settings{"zone": "eu"}
-	usZone := settings{"zone": "us"}
+	template := reset(config{
+		Active:     false,
+		Name:       "$NAME",
+		BinaryFile: "examplebinary/prod",
+		CPURate:    4,
+		MemGB:      32,
+		Alerting:   false,
+	})
+	prod := seq(active(true), alerting(true))
+	euZone := zone("eu")
+	usZone := zone("us")
 
 	add("template", template)
-
-	add("staging", mk(template, settings{
-		"active": "true",
-		"binary": "examplebinary/staging",
-		"zone":   "test",
-	}))
+	add("staging", template, active(true), binaryFile("examplebinary/staging"), zone("test"))
 
 	// Production configs below.
 	add("dublin", template, prod, euZone)
 	add("london", template, prod, euZone)
 	add("paris", template, prod, euZone)
-	add("newyork", template, prod, usZone, settings{
+	add("newyork", template, prod, usZone,
 		// Bump the limits in New York because most traffic happens there.
-		"cpu_limit":    "8",
-		"memory_limit": "64",
-	})
+		cpuRate(8), memGB(64),
+	)
 
 	d.Run("example-deployment-config")
 	return nil
