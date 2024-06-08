@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"slices"
+	"unicode"
 
 	"github.com/ypsu/effdump/internal/effect"
 )
@@ -21,23 +22,40 @@ type Params struct {
 	Env            []string
 	FetchVersion   func(context.Context) (version string, clean bool, err error)
 	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
+
+	version string // the baseline version of the source
+	clean   bool   // whether the working dir is clean
+}
+
+func isIdentifier(v string) bool {
+	if len(v) == 0 || len(v) > 64 {
+		return false
+	}
+	for _, ch := range v {
+		if !unicode.IsDigit(ch) && !unicode.IsLetter(ch) {
+			return false
+		}
+	}
+	return true
 }
 
 // Run runs effdump's main CLI logic.
 func (p *Params) Run(ctx context.Context) error {
+	var err error
 	if !p.Flagset.Parsed() {
 		return fmt.Errorf("edmain check flagset: flagset not parsed")
 	}
-	slices.SortFunc(p.Effects, func(a, b effect.Effect) int { return cmp.Compare(a.Key, b.Key) })
-
-	_, clean, err := p.FetchVersion(ctx)
+	p.version, p.clean, err = p.FetchVersion(ctx)
 	if err != nil {
 		return fmt.Errorf("edmain fetch version: %v", err)
+	}
+	if !isIdentifier(p.version) {
+		return fmt.Errorf("edmain check version: %q is not a short alphanumeric identifier", p.version)
 	}
 
 	subcommand := p.Flagset.Arg(0)
 	if subcommand == "" {
-		if clean {
+		if p.clean {
 			fmt.Fprintln(p.Stdout, `NOTE: subcommand not given, picking "save" because working dir is clean.`)
 			subcommand = "save"
 		} else {
@@ -46,6 +64,7 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 	}
 
+	slices.SortFunc(p.Effects, func(a, b effect.Effect) int { return cmp.Compare(a.Key, b.Key) })
 	for _, e := range p.Effects {
 		fmt.Fprintf(p.Stdout, "%s/%s: %q\n", p.Name, e.Key, e.Value)
 	}
