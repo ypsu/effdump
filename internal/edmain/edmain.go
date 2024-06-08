@@ -7,6 +7,8 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"os"
+	"path/filepath"
 	"slices"
 	"unicode"
 
@@ -23,8 +25,9 @@ type Params struct {
 	FetchVersion   func(context.Context) (version string, clean bool, err error)
 	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
 
-	version string // the baseline version of the source
-	clean   bool   // whether the working dir is clean
+	cachedir string // the user's cache directory
+	version  string // the baseline version of the source
+	clean    bool   // whether the working dir is clean
 }
 
 func isIdentifier(v string) bool {
@@ -39,11 +42,39 @@ func isIdentifier(v string) bool {
 	return true
 }
 
+func (p *Params) cmdSave(_ context.Context) error {
+	// TODO: allow disabling this with a flag.
+	if !p.clean {
+		return fmt.Errorf("edmain clean check: saving from unclean workdir not allowed unless the -force flag is set")
+	}
+
+	buf, err := effect.Marshal(p.Effects)
+	if err != nil {
+		return fmt.Errorf("edmain marshal: %v", err)
+	}
+
+	dir := filepath.Join(p.cachedir, "effdump", p.Name)
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return fmt.Errorf("edmain make dump dir: %v", err)
+	}
+
+	fname := filepath.Join(dir, p.version)
+	if err := os.WriteFile(fname, buf, 0o644); err != nil {
+		return fmt.Errorf("edmain save: %v", fname)
+	}
+	fmt.Fprintf(p.Stdout, "effdump for %s saved to %s.\n", p.version, fname)
+	return nil
+}
+
 // Run runs effdump's main CLI logic.
 func (p *Params) Run(ctx context.Context) error {
 	var err error
 	if !p.Flagset.Parsed() {
 		return fmt.Errorf("edmain check flagset: flagset not parsed")
+	}
+	p.cachedir, err = os.UserCacheDir()
+	if err != nil {
+		return fmt.Errorf("edmain get cachedir: %v", err)
 	}
 	p.version, p.clean, err = p.FetchVersion(ctx)
 	if err != nil {
@@ -65,8 +96,16 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 
 	slices.SortFunc(p.Effects, func(a, b effect.Effect) int { return cmp.Compare(a.Key, b.Key) })
-	for _, e := range p.Effects {
-		fmt.Fprintf(p.Stdout, "%s/%s: %q\n", p.Name, e.Key, e.Value)
+
+	switch subcommand {
+	case "save":
+		return p.cmdSave(ctx)
+	case "print":
+		for _, e := range p.Effects {
+			fmt.Fprintf(p.Stdout, "%s/%s: %q\n", p.Name, e.Key, e.Value)
+		}
+	default:
+		return fmt.Errorf("edmain run subcommand: subcommand %q not found", subcommand)
 	}
 	return nil
 }

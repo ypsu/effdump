@@ -57,7 +57,7 @@ func (d *Dump) Run(name string) {
 		ResolveVersion: d.versionSystem.Resolve,
 	}).Run(context.Background())
 	if err != nil {
-		fmt.Fprintln(os.Stderr, "effdump failed:", err)
+		fmt.Fprintf(os.Stderr, "effdump failed: %v.\n", err)
 		os.Exit(1)
 	}
 	os.Exit(0)
