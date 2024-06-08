@@ -8,6 +8,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/ypsu/effdump"
 )
@@ -29,8 +30,43 @@ func mk(overrides ...settings) settings {
 	return r
 }
 
+func atoi(s string) int {
+	v, err := strconv.Atoi(s)
+	if err != nil {
+		return -1
+	}
+	return v
+}
+
 func run() error {
 	d := effdump.New()
+
+	// add computes and saves the settings for a deployment based on a list of settings overrides.
+	add := func(name string, overrides ...settings) {
+		// Make variable substitutions.
+		ss := mk(overrides...)
+		for k, v := range ss {
+			switch v {
+			case "$NAME":
+				ss[k] = name
+			}
+		}
+
+		if ss["active"] == "false" {
+			d.Add(name, ss)
+			return
+		}
+
+		// Sanity check the active config.
+		if got, want := atoi(ss["memory_limit"]), 32; got < want {
+			ss["error"] += fmt.Sprintf("memory_limit = %d, want at least %d\n", got, want)
+		}
+		if ss["zone"] == "" {
+			ss["error"] += fmt.Sprintf("missing zone\n")
+		}
+
+		d.Add(name, ss)
+	}
 
 	template := settings{
 		"active":       "false",
@@ -44,23 +80,26 @@ func run() error {
 		"active":      "true",
 		"send_alerts": "true",
 	}
+	euZone := settings{"zone": "eu"}
+	usZone := settings{"zone": "us"}
 
-	d.Add("template", template)
+	add("template", template)
 
-	d.Add("staging", mk(template, settings{
+	add("staging", mk(template, settings{
 		"active": "true",
 		"binary": "examplebinary/staging",
+		"zone":   "test",
 	}))
 
 	// Production configs below.
-	d.Add("dublin", mk(template, prod))
-	d.Add("london", mk(template, prod))
-	d.Add("paris", mk(template, prod))
-	d.Add("newyork", mk(template, prod, settings{
+	add("dublin", template, prod, euZone)
+	add("london", template, prod, euZone)
+	add("paris", template, prod, euZone)
+	add("newyork", template, prod, usZone, settings{
 		// Bump the limits in New York because most traffic happens there.
 		"cpu_limit":    "8",
 		"memory_limit": "64",
-	}))
+	})
 
 	d.Run("example-deployment-config")
 	return nil
