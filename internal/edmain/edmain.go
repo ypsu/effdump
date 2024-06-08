@@ -3,6 +3,7 @@ package edmain
 
 import (
 	"cmp"
+	"context"
 	"flag"
 	"fmt"
 	"io"
@@ -13,11 +14,13 @@ import (
 
 // Params contains most of the I/O dependencies for the Run().
 type Params struct {
-	Name    string
-	Effects []effect.Effect
-	Stdout  io.Writer
-	Flagset *flag.FlagSet
-	Env     []string
+	Name           string
+	Effects        []effect.Effect
+	Stdout         io.Writer
+	Flagset        *flag.FlagSet
+	Env            []string
+	FetchVersion   func(context.Context) (version string, clean bool, err error)
+	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
 }
 
 // Run runs effdump's main CLI logic.

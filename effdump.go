@@ -2,6 +2,7 @@
 package effdump
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -9,11 +10,13 @@ import (
 
 	"github.com/ypsu/effdump/internal/edmain"
 	"github.com/ypsu/effdump/internal/effect"
+	"github.com/ypsu/effdump/internal/git"
 )
 
 // Dump represesents an effdump.
 type Dump struct {
-	effects []effect.Effect
+	effects       []effect.Effect
+	versionSystem VersionSystem
 }
 
 // New initializes a new Dump.
@@ -39,16 +42,35 @@ func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
 // This is meant to be overtake the main() function once the effect map is computed, this function never returns.
 // Its behavior is dependent on the command line, see the package comment.
 func (d *Dump) Run(name string) {
+	if d.versionSystem == nil {
+		d.versionSystem = git.New()
+	}
+
 	err := (&edmain.Params{
-		Name:    name,
-		Effects: d.effects,
-		Stdout:  os.Stdout,
-		Flagset: flag.CommandLine,
-		Env:     os.Environ(),
+		Name:           name,
+		Effects:        d.effects,
+		Stdout:         os.Stdout,
+		Flagset:        flag.CommandLine,
+		Env:            os.Environ(),
+		FetchVersion:   d.versionSystem.Fetch,
+		ResolveVersion: d.versionSystem.Resolve,
 	}).Run()
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	os.Exit(0)
+}
+
+// VersionSystem fetches and resolves the source code version from the current environment.
+// The returned version should be alphanumeric because it's going to be used as filenames.
+type VersionSystem interface {
+	Fetch(context.Context) (version string, clean bool, err error)
+	Resolve(ctx context.Context, ref string) (version string, err error)
+}
+
+// SetVersionSystem overrides the version control system effdump uses.
+// The default is git if this function isn't called.
+func (d *Dump) SetVersionSystem(vs VersionSystem) {
+	d.versionSystem = vs
 }
