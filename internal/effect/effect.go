@@ -50,11 +50,11 @@ func Marshal(es []Effect) (data []byte, err error) {
 	for _, e := range es {
 		dumplen += len(e.Key) + len(e.Value)
 		if len(e.Key) >= 1<<15 {
-			return nil, fmt.Errorf("marshal: key %q length is %d, limit is %d", e.Key[:15]+"...", len(e.Key), 1<<15)
+			return nil, fmt.Errorf("effect marshal: key %q length is %d, limit is %d", e.Key[:15]+"...", len(e.Key), 1<<15)
 		}
 	}
 	if dumplen > 1<<30 {
-		return nil, fmt.Errorf("marshal: effdump size is %d, limit is 1 GiB", dumplen)
+		return nil, fmt.Errorf("effect marshal: effdump size is %d, limit is 1 GiB", dumplen)
 	}
 	w := bytes.NewBuffer(make([]byte, 0, 12+dumplen))
 	fmt.Fprint(w, "effdump0")
@@ -75,14 +75,14 @@ func Marshal(es []Effect) (data []byte, err error) {
 // See Marshal() for info about the format.
 func Unmarshal(data []byte) ([]Effect, error) {
 	if !bytes.HasPrefix(data, []byte("effdump0")) {
-		return nil, fmt.Errorf("unmarshal: invalid header, want effdump0")
+		return nil, fmt.Errorf("effect unmarshal: invalid header, want effdump0")
 	}
 
 	// Pre-allocate buffer for the result.
 	w, r, resultSize := &strings.Builder{}, bytes.NewBuffer(data[8:]), int32(0)
 	binary.Read(r, binary.LittleEndian, &resultSize)
 	if resultSize < 0 {
-		return nil, fmt.Errorf("unmarshal: result size = %d, want non-negative", resultSize)
+		return nil, fmt.Errorf("effect unmarshal: result size = %d, want non-negative", resultSize)
 	}
 	w.Grow(int(resultSize))
 
@@ -90,10 +90,10 @@ func Unmarshal(data []byte) ([]Effect, error) {
 	cr := flate.NewReader(r)
 	copied, err := io.Copy(w, cr)
 	if err != nil {
-		return nil, fmt.Errorf("unmarshal: uncompress: %v, uncompressed %d bytes", err, copied)
+		return nil, fmt.Errorf("effect uncompress: %v, uncompressed %d bytes", err, copied)
 	}
 	if copied != int64(resultSize) {
-		return nil, fmt.Errorf("unmarshal: uncompressed size is %d, want %d", copied, resultSize)
+		return nil, fmt.Errorf("effect unmarshal: uncompressed size is %d, want %d", copied, resultSize)
 	}
 
 	// Split the result into effects.
@@ -101,13 +101,13 @@ func Unmarshal(data []byte) ([]Effect, error) {
 	for o+6 <= len(s) {
 		keysz, valuesz := int(binary.LittleEndian.Uint16([]byte(s[o:o+2]))), int(binary.LittleEndian.Uint16([]byte(s[o+2:o+6])))
 		if o+keysz+valuesz > len(s) {
-			return nil, fmt.Errorf("unmarshal: effect at byte %d too large", o)
+			return nil, fmt.Errorf("effect unmarshal: effect at byte %d too large", o)
 		}
 		es = append(es, Effect{s[o+6 : o+6+keysz], s[o+6+keysz : o+6+keysz+valuesz]})
 		o += 6 + keysz + valuesz
 	}
 	if o != len(s) {
-		return nil, fmt.Errorf("unmarshal: incomplete last effect")
+		return nil, fmt.Errorf("effect unmarshal: incomplete last effect")
 	}
 
 	return es, nil
