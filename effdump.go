@@ -55,7 +55,7 @@ func (d *Dump) Run(name string) {
 		Env:            os.Environ(),
 		FetchVersion:   d.versionSystem.Fetch,
 		ResolveVersion: d.versionSystem.Resolve,
-	}).Run()
+	}).Run(context.Background())
 	if err != nil {
 		fmt.Fprintln(os.Stderr, "effdump failed:", err)
 		os.Exit(1)
