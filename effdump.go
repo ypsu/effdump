@@ -10,7 +10,7 @@ import (
 )
 
 // Overrideable for testing purposes.
-var run func(name string, es marshal.Entries)
+var run func(name string, es marshal.Entries) = effdumpmain
 
 func stringify(v any) string {
 	if s, ok := v.(fmt.Stringer); ok {
@@ -25,6 +25,11 @@ func stringify(v any) string {
 // Dump represesents an effdump.
 type Dump struct {
 	es marshal.Entries
+}
+
+// New initializes a new Dump.
+func New() *Dump {
+	return &Dump{}
 }
 
 // Add adds a key value into the dump.
@@ -47,4 +52,16 @@ func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
 func (d *Dump) Run(name string) {
 	slices.SortFunc(d.es, func(a, b marshal.Entry) int { return cmp.Compare(a.Key, b.Key) })
 	run(name, d.es)
+}
+
+// TODO: Create this one too:
+// RunCustomized(name string, stdout, stderr io.Writer, flagset *flag.FlagSet, env []string) error
+// Run() then just does this:
+// if err := RunCustomized(...); err != nil { ... }
+// os.Exit(0)
+
+func effdumpmain(name string, es marshal.Entries) {
+	for _, e := range es {
+		fmt.Printf("%s/%s: %q\n", name, e.Key, e.Value)
+	}
 }
