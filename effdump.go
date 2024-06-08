@@ -42,6 +42,7 @@ func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
 // This is meant to be overtake the main() function once the effect map is computed, this function never returns.
 // Its behavior is dependent on the command line, see the package comment.
 func (d *Dump) Run(name string) {
+	flag.Parse()
 	if d.versionSystem == nil {
 		d.versionSystem = git.New()
 	}
@@ -56,7 +57,7 @@ func (d *Dump) Run(name string) {
 		ResolveVersion: d.versionSystem.Resolve,
 	}).Run()
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		fmt.Fprintln(os.Stderr, "effdump failed:", err)
 		os.Exit(1)
 	}
 	os.Exit(0)

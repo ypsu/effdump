@@ -25,6 +25,10 @@ type Params struct {
 
 // Run runs effdump's main CLI logic.
 func (p *Params) Run() error {
+	if !p.Flagset.Parsed() {
+		return fmt.Errorf("edmain: flagset not parsed")
+	}
+
 	slices.SortFunc(p.Effects, func(a, b effect.Effect) int { return cmp.Compare(a.Key, b.Key) })
 	for _, e := range p.Effects {
 		fmt.Fprintf(p.Stdout, "%s/%s: %q\n", p.Name, e.Key, e.Value)
