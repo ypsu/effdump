@@ -46,12 +46,16 @@ func Stringify(v any) string {
 // - The key value.
 // - The value part.
 func Marshal(es []Effect) (data []byte, err error) {
-	dumplen := 6 * len(es)
-	for _, e := range es {
+	dumplen, lastKey := 6*len(es), ""
+	for i, e := range es {
 		dumplen += len(e.Key) + len(e.Value)
 		if len(e.Key) >= 1<<15 {
 			return nil, fmt.Errorf("effect marshal: key %q length is %d, limit is %d", e.Key[:15]+"...", len(e.Key), 1<<15)
 		}
+		if e.Key <= lastKey {
+			return nil, fmt.Errorf("effect marshal: %dth not in sorted order", i)
+		}
+		lastKey = e.Key
 	}
 	if dumplen > 1<<30 {
 		return nil, fmt.Errorf("effect marshal: effdump size is %d, limit is 1 GiB", dumplen)
@@ -97,14 +101,19 @@ func Unmarshal(data []byte) ([]Effect, error) {
 	}
 
 	// Split the result into effects.
-	es, s, o := make([]Effect, 0, 16), w.String(), 0
+	es, s, o, lastKey := make([]Effect, 0, 16), w.String(), 0, ""
 	for o+6 <= len(s) {
 		keysz, valuesz := int(binary.LittleEndian.Uint16([]byte(s[o:o+2]))), int(binary.LittleEndian.Uint16([]byte(s[o+2:o+6])))
 		if o+keysz+valuesz > len(s) {
 			return nil, fmt.Errorf("effect unmarshal: effect at byte %d too large", o)
 		}
-		es = append(es, Effect{s[o+6 : o+6+keysz], s[o+6+keysz : o+6+keysz+valuesz]})
+		e := Effect{s[o+6 : o+6+keysz], s[o+6+keysz : o+6+keysz+valuesz]}
+		es = append(es, e)
 		o += 6 + keysz + valuesz
+		if e.Key <= lastKey {
+			return nil, fmt.Errorf("effect unmarshal: %dth key not in sorted order", len(es)-1)
+		}
+		lastKey = e.Key
 	}
 	if o != len(s) {
 		return nil, fmt.Errorf("effect unmarshal: incomplete last effect")

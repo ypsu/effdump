@@ -52,7 +52,6 @@ func isIdentifier(v string) bool {
 }
 
 func (p *Params) cmdSave(_ context.Context) error {
-	// TODO: allow disabling this with a flag.
 	if !p.clean && !*p.Force {
 		return fmt.Errorf("edmain clean check: saving from unclean workdir not allowed unless the -force flag is set")
 	}
@@ -72,6 +71,36 @@ func (p *Params) cmdSave(_ context.Context) error {
 		return fmt.Errorf("edmain save: %v", fname)
 	}
 	fmt.Fprintf(p.Stdout, "effdump for %s saved to %s.\n", p.version, fname)
+	return nil
+}
+
+func (p *Params) cmdDiff(_ context.Context) error {
+	fname := filepath.Join(p.cachedir, "effdump", p.Name, p.version)
+	buf, err := os.ReadFile(fname)
+	if err != nil {
+		return fmt.Errorf("edmain load dump: %v", err)
+	}
+	lt, err := effect.Unmarshal(buf)
+	if err != nil {
+		return fmt.Errorf("edmain unmarshal dump: %v", err)
+	}
+	rt := p.Effects
+
+	for len(lt) > 0 && len(rt) > 0 {
+		switch {
+		case len(rt) == 0 || len(lt) > 0 && lt[0].Key < rt[0].Key:
+			fmt.Printf("deleted: %s\n", lt[0].Key)
+			lt = lt[1:]
+		case len(lt) == 0 || len(rt) > 0 && lt[0].Key > rt[0].Key:
+			fmt.Printf("added: %s\n", rt[0].Key)
+			rt = rt[1:]
+		case lt[0].Key == rt[0].Key && lt[0].Value == rt[0].Value:
+			lt, rt = lt[1:], rt[1:]
+		default:
+			fmt.Printf("diff: %s\n", lt[0].Key)
+			lt, rt = lt[1:], rt[1:]
+		}
+	}
 	return nil
 }
 
@@ -106,12 +135,14 @@ func (p *Params) Run(ctx context.Context) error {
 	slices.SortFunc(p.Effects, func(a, b effect.Effect) int { return cmp.Compare(a.Key, b.Key) })
 
 	switch subcommand {
-	case "save":
-		return p.cmdSave(ctx)
+	case "diff":
+		return p.cmdDiff(ctx)
 	case "print":
 		for _, e := range p.Effects {
 			fmt.Fprintf(p.Stdout, "%s/%s: %q\n", p.Name, e.Key, e.Value)
 		}
+	case "save":
+		return p.cmdSave(ctx)
 	default:
 		return fmt.Errorf("edmain run subcommand: subcommand %q not found", subcommand)
 	}
