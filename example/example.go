@@ -1,3 +1,5 @@
+// Binary example generates the deployment config effects for a hypothetical service.
+//
 // This is a barebones example for a fictional settings for a service.
 // The service is deployed in multiple places such as Dublin, London, New York.
 // Most deployments have the same settings, but some have different.

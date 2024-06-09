@@ -1,3 +1,4 @@
 - stringify: json pretty print everything except for stringers and strings
 - examples: add a markdown example too
+- dump: add a hash() function as a convenience
 - flag: add -template=key flag for choosing a "template" to use on lhs side for new rhs keys instead of the empty value
