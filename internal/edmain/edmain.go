@@ -4,6 +4,7 @@ package edmain
 import (
 	"cmp"
 	"context"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -77,6 +78,9 @@ func (p *Params) cmdSave(_ context.Context) error {
 func (p *Params) cmdDiff(_ context.Context) error {
 	fname := filepath.Join(p.cachedir, "effdump", p.Name, p.version)
 	buf, err := os.ReadFile(fname)
+	if errors.Is(err, os.ErrNotExist) {
+		return fmt.Errorf("edmain load dump: effdump for commit %v not found, git stash and save that version first", p.version)
+	}
 	if err != nil {
 		return fmt.Errorf("edmain load dump: %v", err)
 	}
