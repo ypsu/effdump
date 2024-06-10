@@ -30,9 +30,9 @@ type Params struct {
 	Force *bool
 
 	// Internal helper vars.
-	cachedir string // the user's cache directory
-	version  string // the baseline version of the source
-	clean    bool   // whether the working dir is clean
+	tmpdir  string // the dir for storing this effdump's versions
+	version string // the baseline version of the source
+	clean   bool   // whether the working dir is clean
 }
 
 // RegisterFlags registers effdump's flags into a flagset.
@@ -62,12 +62,11 @@ func (p *Params) cmdSave(_ context.Context) error {
 		return fmt.Errorf("edmain marshal: %v", err)
 	}
 
-	dir := filepath.Join(p.cachedir, "effdump", p.Name)
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	if err := os.MkdirAll(p.tmpdir, 0o755); err != nil {
 		return fmt.Errorf("edmain make dump dir: %v", err)
 	}
 
-	fname := filepath.Join(dir, p.version)
+	fname := filepath.Join(p.tmpdir, p.version)
 	if err := os.WriteFile(fname, buf, 0o644); err != nil {
 		return fmt.Errorf("edmain save: %v", fname)
 	}
@@ -76,7 +75,7 @@ func (p *Params) cmdSave(_ context.Context) error {
 }
 
 func (p *Params) cmdDiff(_ context.Context) error {
-	fname := filepath.Join(p.cachedir, "effdump", p.Name, p.version)
+	fname := filepath.Join(p.tmpdir, p.version)
 	buf, err := os.ReadFile(fname)
 	if errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("edmain load dump: effdump for commit %v not found, git stash and save that version first", p.version)
@@ -111,10 +110,10 @@ func (p *Params) cmdDiff(_ context.Context) error {
 // Run runs effdump's main CLI logic.
 func (p *Params) Run(ctx context.Context) error {
 	var err error
-	p.cachedir, err = os.UserCacheDir()
-	if err != nil {
-		return fmt.Errorf("edmain get cachedir: %v", err)
+	if !isIdentifier(p.Name) {
+		return fmt.Errorf("edmain check name: name %q is not a short alphanumeric identifier", p.Name)
 	}
+	p.tmpdir = filepath.Join(os.TempDir(), fmt.Sprintf("effdump-%d-%s", os.Getuid(), p.Name))
 	p.version, p.clean, err = p.FetchVersion(ctx)
 	if err != nil {
 		return fmt.Errorf("edmain fetch version: %v", err)
