@@ -9,8 +9,8 @@ import (
 	"slices"
 
 	"github.com/ypsu/effdump/internal/edmain"
-	"github.com/ypsu/effdump/internal/effect"
 	"github.com/ypsu/effdump/internal/git"
+	"github.com/ypsu/effdump/internal/keyvalue"
 )
 
 // Dump represesents an effdump.
@@ -33,7 +33,7 @@ func New(name string) *Dump {
 
 // Add adds a key value into the dump.
 func (d *Dump) Add(key, value any) {
-	d.Effects = append(d.Effects, effect.Effect{effect.Stringify(key), effect.Stringify(value)})
+	d.Effects = append(d.Effects, keyvalue.KV{edmain.Stringify(key), edmain.Stringify(value)})
 }
 
 // AddMap adds each entry of the map to the dump.

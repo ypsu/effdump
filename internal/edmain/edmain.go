@@ -13,13 +13,13 @@ import (
 	"slices"
 	"unicode"
 
-	"github.com/ypsu/effdump/internal/effect"
+	"github.com/ypsu/effdump/internal/keyvalue"
 )
 
 // Params contains most of the I/O dependencies for the Run().
 type Params struct {
 	Name           string
-	Effects        []effect.Effect
+	Effects        []keyvalue.KV
 	Stdout         io.Writer
 	Env            []string
 	FetchVersion   func(context.Context) (version string, clean bool, err error)
@@ -57,7 +57,7 @@ func (p *Params) cmdSave(_ context.Context) error {
 		return fmt.Errorf("edmain clean check: saving from unclean workdir not allowed unless the -force flag is set")
 	}
 
-	buf, err := effect.Marshal(p.Effects)
+	buf, err := Compress(p.Effects)
 	if err != nil {
 		return fmt.Errorf("edmain marshal: %v", err)
 	}
@@ -66,7 +66,7 @@ func (p *Params) cmdSave(_ context.Context) error {
 		return fmt.Errorf("edmain make dump dir: %v", err)
 	}
 
-	fname := filepath.Join(p.tmpdir, p.version)
+	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
 	if err := os.WriteFile(fname, buf, 0o644); err != nil {
 		return fmt.Errorf("edmain save: %v", fname)
 	}
@@ -75,7 +75,7 @@ func (p *Params) cmdSave(_ context.Context) error {
 }
 
 func (p *Params) cmdDiff(_ context.Context) error {
-	fname := filepath.Join(p.tmpdir, p.version)
+	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
 	buf, err := os.ReadFile(fname)
 	if errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("edmain load dump: effdump for commit %v not found, git stash and save that version first", p.version)
@@ -83,7 +83,7 @@ func (p *Params) cmdDiff(_ context.Context) error {
 	if err != nil {
 		return fmt.Errorf("edmain load dump: %v", err)
 	}
-	lt, err := effect.Unmarshal(buf)
+	lt, err := Uncompress(buf)
 	if err != nil {
 		return fmt.Errorf("edmain unmarshal dump: %v", err)
 	}
@@ -91,16 +91,16 @@ func (p *Params) cmdDiff(_ context.Context) error {
 
 	for len(lt) > 0 && len(rt) > 0 {
 		switch {
-		case len(rt) == 0 || len(lt) > 0 && lt[0].Key < rt[0].Key:
-			fmt.Printf("deleted: %s\n", lt[0].Key)
+		case len(rt) == 0 || len(lt) > 0 && lt[0].K < rt[0].K:
+			fmt.Printf("deleted: %s\n", lt[0].K)
 			lt = lt[1:]
-		case len(lt) == 0 || len(rt) > 0 && lt[0].Key > rt[0].Key:
-			fmt.Printf("added: %s\n", rt[0].Key)
+		case len(lt) == 0 || len(rt) > 0 && lt[0].K > rt[0].K:
+			fmt.Printf("added: %s\n", rt[0].K)
 			rt = rt[1:]
-		case lt[0].Key == rt[0].Key && lt[0].Value == rt[0].Value:
+		case lt[0].K == rt[0].K && lt[0].V == rt[0].V:
 			lt, rt = lt[1:], rt[1:]
 		default:
-			fmt.Printf("diff: %s\n", lt[0].Key)
+			fmt.Printf("diff: %s\n", lt[0].K)
 			lt, rt = lt[1:], rt[1:]
 		}
 	}
@@ -135,14 +135,14 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 	}
 
-	slices.SortFunc(p.Effects, func(a, b effect.Effect) int { return cmp.Compare(a.Key, b.Key) })
+	slices.SortFunc(p.Effects, func(a, b keyvalue.KV) int { return cmp.Compare(a.K, b.K) })
 
 	switch subcommand {
 	case "diff":
 		return p.cmdDiff(ctx)
 	case "print":
 		for _, e := range p.Effects {
-			fmt.Fprintf(p.Stdout, "%s/%s: %q\n", p.Name, e.Key, e.Value)
+			fmt.Fprintf(p.Stdout, "%s/%s: %q\n", p.Name, e.K, e.V)
 		}
 	case "save":
 		return p.cmdSave(ctx)

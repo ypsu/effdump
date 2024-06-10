@@ -41,7 +41,7 @@ if test -s "$tmpfile"; then
 fi
 
 echo -n 'linting...'
-revive $gofiles >"$tmpfile" 2>&1
+revive ./... >"$tmpfile" 2>&1
 echo -en "\r\e[K"
 if test -s "$tmpfile"; then
   echo "Error: revive failed:"

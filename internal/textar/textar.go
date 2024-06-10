@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/ypsu/effdump/internal/effect"
+	"github.com/ypsu/effdump/internal/keyvalue"
 )
 
 func quote(s string) string {
@@ -20,14 +20,14 @@ func unquote(q string) string {
 }
 
 // Format encodes key value pairs into a textar string.
-func Format(es []effect.Effect) string {
+func Format(kvs []keyvalue.KV) string {
 	// Pick a unique separator string that no value contains.
 	maxdash, bufsz := 0, 0
-	for _, e := range es {
-		bufsz += len(e.Key) + len(e.Value) + 2
+	for _, kv := range kvs {
+		bufsz += len(kv.K) + len(kv.V) + 2
 		d := 0
-		for i := 0; i < len(e.Value); i++ {
-			switch e.Value[i] {
+		for i := 0; i < len(kv.V); i++ {
+			switch kv.V[i] {
 			case '\n':
 				d = 0
 			case '-':
@@ -38,35 +38,35 @@ func Format(es []effect.Effect) string {
 		}
 	}
 	sep := strings.Repeat("-", max(3, maxdash+2)) + " "
-	bufsz += len(es) * len(sep)
+	bufsz += len(kvs) * len(sep)
 
 	w := strings.Builder{}
 	w.Grow(bufsz)
-	for i, e := range es {
+	for i, kv := range kvs {
 		if i > 0 {
 			w.WriteString("\n")
 		}
 		w.WriteString(sep)
-		w.WriteString(quote(e.Key))
+		w.WriteString(quote(kv.K))
 		w.WriteString("\n")
-		w.WriteString(e.Value)
+		w.WriteString(kv.V)
 	}
 	return w.String()
 }
 
 // Parse decodes a textar string into key value pairs.
-func Parse(ar string) []effect.Effect {
-	var es []effect.Effect
+// The decoded entries are appended to dst and then dst is returned.
+func Parse(dst []keyvalue.KV, ar string) []keyvalue.KV {
 	sep, rest, ok := strings.Cut(ar, " ")
 	sep = "\n" + sep + " "
 	for ok {
 		var key, value string
 		key, rest, ok = strings.Cut(rest, "\n")
 		if !ok {
-			return es
+			return dst
 		}
 		value, rest, ok = strings.Cut(rest, sep)
-		es = append(es, effect.Effect{unquote(key), value})
+		dst = append(dst, keyvalue.KV{unquote(key), value})
 	}
-	return es
+	return dst
 }
