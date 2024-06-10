@@ -87,6 +87,7 @@ func mkdump() (*effdump.Dump, error) {
 			testdump print
 	`
 	p.Args = []string{"print"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
 	run()
 
 	return d, nil

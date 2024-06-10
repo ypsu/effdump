@@ -56,6 +56,7 @@ func Format(kvs []keyvalue.KV) string {
 
 // Parse decodes a textar string into key value pairs.
 // The decoded entries are appended to dst and then dst is returned.
+// dst can be nil.
 func Parse(dst []keyvalue.KV, ar string) []keyvalue.KV {
 	sep, rest, ok := strings.Cut(ar, " ")
 	sep = "\n" + sep + " "

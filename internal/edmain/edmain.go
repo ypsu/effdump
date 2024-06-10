@@ -14,6 +14,7 @@ import (
 	"unicode"
 
 	"github.com/ypsu/effdump/internal/keyvalue"
+	"github.com/ypsu/effdump/internal/textar"
 )
 
 // Params contains most of the I/O dependencies for the Run().
@@ -141,9 +142,7 @@ func (p *Params) Run(ctx context.Context) error {
 	case "diff":
 		return p.cmdDiff(ctx)
 	case "print":
-		for _, e := range p.Effects {
-			fmt.Fprintf(p.Stdout, "%s/%s: %q\n", p.Name, e.K, e.V)
-		}
+		fmt.Fprintln(p.Stdout, textar.Format(p.Effects))
 	case "save":
 		return p.cmdSave(ctx)
 	default:
