@@ -3,12 +3,20 @@ package main
 
 import (
 	"context"
+	"embed"
 	"fmt"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/ypsu/effdump"
+	"github.com/ypsu/effdump/internal/edmain"
+	"github.com/ypsu/effdump/internal/keyvalue"
+	"github.com/ypsu/effdump/internal/textar"
 )
+
+//go:embed *.textar
+var testdataFS embed.FS
 
 func addStringifyEffects(d *effdump.Dump) {
 	d.Add("stringify/int", 42)
@@ -25,9 +33,62 @@ func addStringifyEffects(d *effdump.Dump) {
 	}{{1, []string{"a", "b"}}, {2, []string{"multiline\nstring"}}})
 }
 
+func testdata(fn string) string {
+	buf, err := testdataFS.ReadFile(fn)
+	if err != nil {
+		panic(fmt.Errorf("main read testdata: %v", err))
+	}
+	return string(buf)
+}
+
 func mkdump() (*effdump.Dump, error) {
+	ctx := context.Background()
 	d := effdump.New("effdumptest")
 	addStringifyEffects(d)
+
+	// Set up common helpers.
+	desc, w, log := "", &strings.Builder{}, &strings.Builder{}
+	fetchVersion, fetchClean, fetchErr := "dummyversion", true, error(nil)
+	p := &edmain.Params{
+		Name:   "testdump",
+		Stdout: w,
+
+		FetchVersion: func(context.Context) (string, bool, error) {
+			fmt.Fprintf(log, "FetchVersion() -> (%q, %t, %v)\n", fetchVersion, fetchClean, fetchErr)
+			return fetchVersion, fetchClean, fetchErr
+		},
+
+		ResolveVersion: func(_ context.Context, ref string) (string, error) {
+			fmt.Fprintf(log, "ResolveVersion(%s) -> (%q, %v)\n", ref, fetchVersion, fetchErr)
+			return fetchVersion, fetchErr
+		},
+	}
+	run := func() {
+		kvs, name := make([]keyvalue.KV, 2, 4), ""
+		desc = strings.ReplaceAll(desc, "\n\t\t", "\n") // Deindent.
+		name, desc, _ = strings.Cut(desc, "\n")
+		kvs[0] = keyvalue.KV{"desc", desc}
+		err := p.Run(ctx)
+		kvs[1] = keyvalue.KV{"stdout", w.String()}
+		w.Reset()
+		if err != nil {
+			kvs = append(kvs, keyvalue.KV{"error", err.Error()})
+		}
+		if log.Len() > 0 {
+			kvs = append(kvs, keyvalue.KV{"log", log.String()})
+			log.Reset()
+		}
+		d.Add(name, textar.Format(kvs))
+	}
+
+	desc = `nums-print/no-args
+		Printing without args should print all the effects.
+
+			testdump print
+	`
+	p.Args = []string{"print"}
+	run()
+
 	return d, nil
 }
 
