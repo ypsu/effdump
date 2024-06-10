@@ -1,4 +1,4 @@
-- textar: implement and switch to textar.gz as the effdump format
+- compress: avoid rewriting if the hash of the dump is the same; read hash from gzip header
 - stringify: json pretty print everything except for stringers and strings
 - examples: add a markdown example too
 - dump: add a hash() function as a convenience
