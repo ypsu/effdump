@@ -1,4 +1,3 @@
-- test: capture stderr; if stderr is written, have a failing unittest in case the stderr was set anywhere, output with stderr shouldn't be committed
 - test: add a dup test, same as "no args" but with "even" added to the entries again
 - print: add simple globbing support (do this instead of regexes; rewrite glob to regex via the help of regexp.quotemeta)
 - compress: avoid rewriting if the hash of the dump is the same; read hash from gzip header

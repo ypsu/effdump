@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/ypsu/effdump"
+	"github.com/ypsu/effdump/internal/edbg"
 	"github.com/ypsu/effdump/internal/edmain"
 	"github.com/ypsu/effdump/internal/keyvalue"
 	"github.com/ypsu/effdump/internal/textar"
@@ -42,6 +43,10 @@ func testdata(fn string) string {
 }
 
 func mkdump() (*effdump.Dump, error) {
+	debuglog := &strings.Builder{}
+	edbg.Printf = func(format string, v ...any) { fmt.Fprintf(debuglog, format, v...) }
+	defer edbg.Reset()
+
 	ctx := context.Background()
 	d := effdump.New("effdumptest")
 	addStringifyEffects(d)
@@ -54,12 +59,12 @@ func mkdump() (*effdump.Dump, error) {
 		Stdout: w,
 
 		FetchVersion: func(context.Context) (string, bool, error) {
-			fmt.Fprintf(log, "FetchVersion() -> (%q, %t, %v)\n", fetchVersion, fetchClean, fetchErr)
+			edbg.Printf("FetchVersion() -> (%q, %t, %v)\n", fetchVersion, fetchClean, fetchErr)
 			return fetchVersion, fetchClean, fetchErr
 		},
 
 		ResolveVersion: func(_ context.Context, ref string) (string, error) {
-			fmt.Fprintf(log, "ResolveVersion(%s) -> (%q, %v)\n", ref, fetchVersion, fetchErr)
+			edbg.Printf("ResolveVersion(%s) -> (%q, %v)\n", ref, fetchVersion, fetchErr)
 			return fetchVersion, fetchErr
 		},
 	}
@@ -77,6 +82,10 @@ func mkdump() (*effdump.Dump, error) {
 		if log.Len() > 0 {
 			kvs = append(kvs, keyvalue.KV{"log", log.String()})
 			log.Reset()
+		}
+		if debuglog.Len() > 0 {
+			kvs = append(kvs, keyvalue.KV{"debuglog", debuglog.String()})
+			debuglog.Reset()
 		}
 		d.Add(name, textar.Format(kvs))
 	}
