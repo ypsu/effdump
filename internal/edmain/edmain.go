@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"unicode"
 
 	"github.com/ypsu/effdump/internal/keyvalue"
@@ -93,15 +94,15 @@ func (p *Params) cmdDiff(_ context.Context) error {
 	for len(lt) > 0 && len(rt) > 0 {
 		switch {
 		case len(rt) == 0 || len(lt) > 0 && lt[0].K < rt[0].K:
-			fmt.Printf("deleted: %s\n", lt[0].K)
+			fmt.Fprintf(p.Stdout, "deleted: %s\n", lt[0].K)
 			lt = lt[1:]
 		case len(lt) == 0 || len(rt) > 0 && lt[0].K > rt[0].K:
-			fmt.Printf("added: %s\n", rt[0].K)
+			fmt.Fprintf(p.Stdout, "added: %s\n", rt[0].K)
 			rt = rt[1:]
 		case lt[0].K == rt[0].K && lt[0].V == rt[0].V:
 			lt, rt = lt[1:], rt[1:]
 		default:
-			fmt.Printf("diff: %s\n", lt[0].K)
+			fmt.Fprintf(p.Stdout, "diff: %s\n", lt[0].K)
 			lt, rt = lt[1:], rt[1:]
 		}
 	}
@@ -115,6 +116,11 @@ func (p *Params) Run(ctx context.Context) error {
 		return fmt.Errorf("edmain check name: name %q is not a short alphanumeric identifier", p.Name)
 	}
 	p.tmpdir = filepath.Join(os.TempDir(), fmt.Sprintf("effdump-%d-%s", os.Getuid(), p.Name))
+	for _, e := range p.Env {
+		if dir, ok := strings.CutPrefix(e, "EFFDUMP_DIR="); ok {
+			p.tmpdir = dir
+		}
+	}
 	p.version, p.clean, err = p.FetchVersion(ctx)
 	if err != nil {
 		return fmt.Errorf("edmain fetch version: %v", err)
