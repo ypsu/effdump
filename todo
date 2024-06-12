@@ -1,3 +1,4 @@
+- txtar: add a sepch parameter then add flag for overwriting the default =
 - test: add a dup test, same as "no args" but with "even" added to the entries again
 - print: add simple globbing support (do this instead of regexes; rewrite glob to regex via the help of regexp.quotemeta)
 - compress: avoid rewriting if the hash of the dump is the same; read hash from gzip header

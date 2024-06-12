@@ -6,6 +6,7 @@ import (
 	"embed"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -47,6 +48,13 @@ func mkdump() (*effdump.Dump, error) {
 	edbg.Printf = func(format string, v ...any) { fmt.Fprintf(debuglog, format, v...) }
 	defer edbg.Reset()
 
+	// Set up a tmpdir for EFFDUMP_DIR.
+	tmpdir, err := os.MkdirTemp("", "effdump-tmp-")
+	if err != nil {
+		return nil, fmt.Errorf("effdumptest make temp dir: %v", err)
+	}
+	defer os.RemoveAll(tmpdir)
+
 	ctx := context.Background()
 	d := effdump.New("effdumptest")
 	addStringifyEffects(d)
@@ -56,6 +64,7 @@ func mkdump() (*effdump.Dump, error) {
 	fetchVersion, fetchClean, fetchErr := "dummyversion", true, error(nil)
 	p := &edmain.Params{
 		Name:   "testdump",
+		Env:    []string{"EFFDUMP_DIR=" + tmpdir},
 		Stdout: w,
 
 		FetchVersion: func(context.Context) (string, bool, error) {
@@ -69,13 +78,15 @@ func mkdump() (*effdump.Dump, error) {
 		},
 	}
 	run := func() {
-		kvs, name := make([]keyvalue.KV, 2, 4), ""
+		kvs, name := make([]keyvalue.KV, 1, 4), ""
 		desc = strings.ReplaceAll(desc, "\n\t\t", "\n") // Deindent.
 		name, desc, _ = strings.Cut(desc, "\n")
 		kvs[0] = keyvalue.KV{"desc", desc}
 		err := p.Run(ctx)
-		kvs[1] = keyvalue.KV{"stdout", w.String()}
-		w.Reset()
+		if w.Len() > 0 {
+			kvs = append(kvs, keyvalue.KV{"stdout", w.String()})
+			w.Reset()
+		}
 		if err != nil {
 			kvs = append(kvs, keyvalue.KV{"error", err.Error()})
 		}
@@ -90,6 +101,16 @@ func mkdump() (*effdump.Dump, error) {
 		d.Add(name, textar.Format(kvs))
 	}
 
+	// The baseline for the following test will be numsbase.
+	fetchVersion = "numsbase"
+	gz, err := edmain.Compress(textar.Parse(nil, testdata("numsbase.textar")))
+	if err != nil {
+		return nil, fmt.Errorf("effdumptest compress numsbase: %v", err)
+	}
+	if err := os.WriteFile(filepath.Join(tmpdir, "numsbase.gz"), gz, 0o644); err != nil {
+		return nil, fmt.Errorf("effdumptest write numsbase.gz: %v", err)
+	}
+
 	desc = `nums-print/no-args
 		Printing without args should print all the effects.
 
@@ -97,6 +118,24 @@ func mkdump() (*effdump.Dump, error) {
 	`
 	p.Args = []string{"print"}
 	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
+	desc = `nums-diff/base-no-args
+		Diffing base against base without args should have no output.
+
+			testdump diff
+	`
+	p.Args = []string{"diff"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
+	desc = `nums-diff/changed-no-args
+		Diffing base against changed without args should have print all diffs.
+
+			testdump diff
+	`
+	p.Args = []string{"diff"}
+	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run()
 
 	return d, nil
