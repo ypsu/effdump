@@ -2,6 +2,7 @@
 package effdump
 
 import (
+	"bufio"
 	"context"
 	"flag"
 	"fmt"
@@ -14,32 +15,29 @@ import (
 )
 
 // Dump represesents an effdump.
-type Dump edmain.Params
-
-func (d *Dump) params() *edmain.Params {
-	return (*edmain.Params)(d)
+type Dump struct {
+	params edmain.Params
 }
 
 // New initializes a new Dump.
 func New(name string) *Dump {
-	d := &Dump{
-		Name:   name,
-		Stdout: os.Stdout,
-		Env:    os.Environ(),
-	}
-	d.params().RegisterFlags(flag.CommandLine)
+	d := &Dump{edmain.Params{
+		Name: name,
+		Env:  os.Environ(),
+	}}
+	d.params.RegisterFlags(flag.CommandLine)
 	return d
 }
 
 // Add adds a key value into the dump.
 func (d *Dump) Add(key, value any) {
-	d.Effects = append(d.Effects, keyvalue.KV{edmain.Stringify(key), edmain.Stringify(value)})
+	d.params.Effects = append(d.params.Effects, keyvalue.KV{edmain.Stringify(key), edmain.Stringify(value)})
 }
 
 // AddMap adds each entry of the map to the dump.
 // It's a standalone method due to a Go limitation around generics.
 func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
-	d.Effects = slices.Grow(d.Effects, len(m))
+	d.params.Effects = slices.Grow(d.params.Effects, len(m))
 	for k, v := range m {
 		d.Add(k, v)
 	}
@@ -50,11 +48,16 @@ func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
 // Its behavior is dependent on the command line, see the package comment.
 func (d *Dump) Run(ctx context.Context) {
 	flag.Parse()
-	d.Args = flag.Args()
-	if d.FetchVersion == nil {
+	d.params.Args = flag.Args()
+	if d.params.FetchVersion == nil {
 		d.SetVersionSystem(git.New())
 	}
-	if err := d.params().Run(ctx); err != nil {
+
+	out := bufio.NewWriter(os.Stdout)
+	d.params.Stdout = out
+	err := d.params.Run(ctx)
+	out.Flush()
+	if err != nil {
 		fmt.Fprintf(os.Stderr, "effdump failed: %v.\n", err)
 		os.Exit(1)
 	}
@@ -71,6 +74,6 @@ type VersionSystem interface {
 // SetVersionSystem overrides the version control system effdump uses.
 // The default is git if this function isn't called.
 func (d *Dump) SetVersionSystem(vs VersionSystem) {
-	d.FetchVersion = vs.Fetch
-	d.ResolveVersion = vs.Resolve
+	d.params.FetchVersion = vs.Fetch
+	d.params.ResolveVersion = vs.Resolve
 }
