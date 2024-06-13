@@ -33,7 +33,7 @@ func (vs *VersionSystem) Fetch(ctx context.Context) (version string, clean bool,
 func (*VersionSystem) Resolve(_ context.Context, rev string) (version string, err error) {
 	output, err := exec.Command("git", "rev-parse", "--short", rev).Output()
 	if err != nil {
-		return "", fmt.Errorf("git exec rev-parse: %v", err)
+		return "", fmt.Errorf("git exec rev-parse: %v (not in git directory?)", err)
 	}
 	fields := bytes.Fields(output)
 	if len(fields) != 1 {
