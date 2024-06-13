@@ -23,13 +23,14 @@ type Params struct {
 	Name           string
 	Effects        []keyvalue.KV
 	Stdout         io.Writer
+	Args           []string
 	Env            []string
 	FetchVersion   func(context.Context) (version string, clean bool, err error)
 	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
 
-	// Flags.
-	Args  []string
-	Force *bool
+	// Flags. Must be parsed by the caller after RegisterFlags.
+	Force bool
+	Sepch string
 
 	// Internal helper vars.
 	tmpdir  string // the dir for storing this effdump's versions
@@ -39,7 +40,8 @@ type Params struct {
 
 // RegisterFlags registers effdump's flags into a flagset.
 func (p *Params) RegisterFlags(fs *flag.FlagSet) {
-	p.Force = fs.Bool("force", false, "Force a save even from unclean directory.")
+	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
+	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 }
 
 func isIdentifier(v string) bool {
@@ -55,11 +57,11 @@ func isIdentifier(v string) bool {
 }
 
 func (p *Params) cmdSave(_ context.Context) error {
-	if !p.clean && !*p.Force {
+	if !p.clean && !p.Force {
 		return fmt.Errorf("edmain clean check: saving from unclean workdir not allowed unless the -force flag is set")
 	}
 
-	buf, err := Compress(p.Effects)
+	buf, err := Compress(p.Effects, p.Sepch[0])
 	if err != nil {
 		return fmt.Errorf("edmain marshal: %v", err)
 	}
@@ -115,6 +117,9 @@ func (p *Params) Run(ctx context.Context) error {
 	if !isIdentifier(p.Name) {
 		return fmt.Errorf("edmain check name: name %q is not a short alphanumeric identifier", p.Name)
 	}
+	if len(p.Sepch) != 1 {
+		return fmt.Errorf("edmain sepch check: flag -sepch = %q, want a string of length 1", p.Sepch)
+	}
 	p.tmpdir = filepath.Join(os.TempDir(), fmt.Sprintf("effdump-%d-%s", os.Getuid(), p.Name))
 	for _, e := range p.Env {
 		if dir, ok := strings.CutPrefix(e, "EFFDUMP_DIR="); ok {
@@ -148,7 +153,7 @@ func (p *Params) Run(ctx context.Context) error {
 	case "diff":
 		return p.cmdDiff(ctx)
 	case "print":
-		fmt.Fprintln(p.Stdout, textar.Format(p.Effects))
+		fmt.Fprintln(p.Stdout, textar.Format(p.Effects, p.Sepch[0]))
 	case "save":
 		return p.cmdSave(ctx)
 	default:

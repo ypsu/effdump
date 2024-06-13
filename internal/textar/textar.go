@@ -20,7 +20,9 @@ func unquote(q string) string {
 }
 
 // Format encodes key value pairs into a textar string.
-func Format(kvs []keyvalue.KV) string {
+// sepch is the separator character.
+// Recommended to pass = or -.
+func Format(kvs []keyvalue.KV, sepch byte) string {
 	// Pick a unique separator string that no value contains.
 	maxdash, bufsz := 0, 0
 	for _, kv := range kvs {
@@ -30,14 +32,14 @@ func Format(kvs []keyvalue.KV) string {
 			switch kv.V[i] {
 			case '\n':
 				d = 0
-			case '-':
+			case sepch:
 				d, maxdash = d+1, max(maxdash, d+1)
 			default:
 				d = -99999999
 			}
 		}
 	}
-	sep := strings.Repeat("-", max(3, maxdash+2)) + " "
+	sep := strings.Repeat(string(sepch), max(3, maxdash+2)) + " "
 	bufsz += len(kvs) * len(sep)
 
 	w := strings.Builder{}

@@ -15,7 +15,7 @@ func TestUncompress(t *testing.T) {
 	for i := 0; i < 7; i++ {
 		src = append(src, keyvalue.KV{fmt.Sprint(i), strings.Repeat("x", i)})
 	}
-	data, err := edmain.Compress(src)
+	data, err := edmain.Compress(src, '=')
 	if err != nil {
 		t.Errorf("Compress() = %v, want no error.", err)
 	}

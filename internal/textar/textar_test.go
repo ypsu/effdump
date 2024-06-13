@@ -15,7 +15,7 @@ func TestAr(t *testing.T) {
 		{"", "this has no name\n--- and has 3 dashes too\n"},
 		{"last", "entry"},
 	}
-	ar := textar.Format(src)
+	ar := textar.Format(src, '=')
 	dst := textar.Parse(nil, ar)
 	if !slices.Equal(src, dst) {
 		t.Errorf("Error self-decoding, archive:\n%s\ndecoded into this:\n%q", ar, dst)

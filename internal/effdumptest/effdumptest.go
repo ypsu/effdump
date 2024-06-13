@@ -66,6 +66,7 @@ func mkdump() (*effdump.Dump, error) {
 		Name:   "testdump",
 		Env:    []string{"EFFDUMP_DIR=" + tmpdir},
 		Stdout: w,
+		Sepch:  "-",
 
 		FetchVersion: func(context.Context) (string, bool, error) {
 			edbg.Printf("FetchVersion() -> (%q, %t, %v)\n", fetchVersion, fetchClean, fetchErr)
@@ -98,12 +99,12 @@ func mkdump() (*effdump.Dump, error) {
 			kvs = append(kvs, keyvalue.KV{"debuglog", debuglog.String()})
 			debuglog.Reset()
 		}
-		d.Add(name, textar.Format(kvs))
+		d.Add(name, textar.Format(kvs, '~'))
 	}
 
 	// The baseline for the following test will be numsbase.
 	fetchVersion = "numsbase"
-	gz, err := edmain.Compress(textar.Parse(nil, testdata("numsbase.textar")))
+	gz, err := edmain.Compress(textar.Parse(nil, testdata("numsbase.textar")), '=')
 	if err != nil {
 		return nil, fmt.Errorf("effdumptest compress numsbase: %v", err)
 	}

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"slices"
+	"strings"
 
 	"github.com/ypsu/effdump/internal/edmain"
 	"github.com/ypsu/effdump/internal/git"
@@ -48,6 +49,23 @@ func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
 // Its behavior is dependent on the command line, see the package comment.
 func (d *Dump) Run(ctx context.Context) {
 	flag.Parse()
+
+	// Check for bad flag usage.
+	positionalPart := false
+	for _, arg := range os.Args[1:] {
+		if arg == "--" {
+			break
+		}
+		if strings.HasPrefix(arg, "-") {
+			if positionalPart {
+				fmt.Fprintf(os.Stderr, "ERROR: %q looks like a flag, flags must before positional args, use `--` on its own to separate.\n", arg)
+				os.Exit(1)
+			}
+		} else {
+			positionalPart = true
+		}
+	}
+
 	d.params.Args = flag.Args()
 	if d.params.FetchVersion == nil {
 		d.SetVersionSystem(git.New())
@@ -58,7 +76,7 @@ func (d *Dump) Run(ctx context.Context) {
 	err := d.params.Run(ctx)
 	out.Flush()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "effdump failed: %v.\n", err)
+		fmt.Fprintf(os.Stderr, "ERROR: %v.\n", err)
 		os.Exit(1)
 	}
 	os.Exit(0)

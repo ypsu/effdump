@@ -17,9 +17,9 @@ const (
 )
 
 // Compress compresses `kvs` into a byte stream suitable for saving to disk.
-// It's a gzip compressed textar.
+// It's a gzip compressed textar with sepch used as the separator character.
 // Returns an error if kvs is not sorted or encoding hit internal limits.
-func Compress(kvs []keyvalue.KV) (data []byte, err error) {
+func Compress(kvs []keyvalue.KV, sepch byte) (data []byte, err error) {
 	if len(kvs) > maxEntries {
 		// This library wasn't designed for this huge size.
 		return nil, fmt.Errorf("edmain marshal: effects count is %d K, limit is %d K", len(kvs)/1e3, maxEntries/1e3)
@@ -37,7 +37,7 @@ func Compress(kvs []keyvalue.KV) (data []byte, err error) {
 	}
 
 	buf := &bytes.Buffer{}
-	ar, w := textar.Format([]keyvalue.KV(kvs)), gzip.NewWriter(buf)
+	ar, w := textar.Format([]keyvalue.KV(kvs), sepch), gzip.NewWriter(buf)
 	w.Header.Comment = fmt.Sprintf("effdump %d %d", len(kvs), len(ar))
 	_, err = io.Copy(w, strings.NewReader(ar))
 	if err != nil {
