@@ -38,7 +38,7 @@ func addStringifyEffects(d *effdump.Dump) {
 func testdata(fn string) string {
 	buf, err := testdataFS.ReadFile(fn)
 	if err != nil {
-		panic(fmt.Errorf("main read testdata: %v", err))
+		panic(fmt.Errorf("effdumptest/read testdata: %v", err))
 	}
 	return string(buf)
 }
@@ -51,7 +51,7 @@ func mkdump() (*effdump.Dump, error) {
 	// Set up a tmpdir for EFFDUMP_DIR.
 	tmpdir, err := os.MkdirTemp("", "effdump-tmp-")
 	if err != nil {
-		return nil, fmt.Errorf("effdumptest make temp dir: %v", err)
+		return nil, fmt.Errorf("effdumptest/make temp dir: %v", err)
 	}
 	defer os.RemoveAll(tmpdir)
 
@@ -106,10 +106,10 @@ func mkdump() (*effdump.Dump, error) {
 	fetchVersion = "numsbase"
 	gz, err := edmain.Compress(textar.Parse(nil, testdata("numsbase.textar")), '=')
 	if err != nil {
-		return nil, fmt.Errorf("effdumptest compress numsbase: %v", err)
+		return nil, fmt.Errorf("effdumptest/compress numsbase: %v", err)
 	}
 	if err := os.WriteFile(filepath.Join(tmpdir, "numsbase.gz"), gz, 0o644); err != nil {
-		return nil, fmt.Errorf("effdumptest write numsbase.gz: %v", err)
+		return nil, fmt.Errorf("effdumptest/write numsbase.gz: %v", err)
 	}
 
 	desc = `nums-print/no-args

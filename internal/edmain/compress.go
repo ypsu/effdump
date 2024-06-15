@@ -41,7 +41,7 @@ func Compress(kvs []keyvalue.KV, sepch byte) (data []byte, err error) {
 	w.Header.Comment = fmt.Sprintf("effdump %d %d", len(kvs), len(ar))
 	_, err = io.Copy(w, strings.NewReader(ar))
 	if err != nil {
-		return nil, fmt.Errorf("edmain compress: %v", err)
+		return nil, fmt.Errorf("edmain/compress: %v", err)
 	}
 	w.Close()
 	return buf.Bytes(), nil
@@ -54,21 +54,21 @@ func Compress(kvs []keyvalue.KV, sepch byte) (data []byte, err error) {
 func Uncompress(data []byte) ([]keyvalue.KV, error) {
 	r, err := gzip.NewReader(bytes.NewBuffer(data))
 	if err != nil {
-		return nil, fmt.Errorf("edmain init decompressor: %v", err)
+		return nil, fmt.Errorf("edmain/init decompressor: %v", err)
 	}
 	var entriesCount, textarLen int
 	fmt.Sscanf(r.Header.Comment, "effdump %d %d", &entriesCount, &textarLen)
 	if entriesCount > maxEntries || textarLen > maxTotalBytes {
-		return nil, fmt.Errorf("edmain header check: effdump too large: entriesK=%d > %d or totalMB=%d > %d", entriesCount/1e3, maxEntries/1e3, textarLen/1e6, maxTotalBytes/1e6)
+		return nil, fmt.Errorf("edmain/header check: effdump too large: entriesK=%d > %d or totalMB=%d > %d", entriesCount/1e3, maxEntries/1e3, textarLen/1e6, maxTotalBytes/1e6)
 	}
 	w, kvs := &strings.Builder{}, make([]keyvalue.KV, 0, entriesCount)
 	w.Grow(textarLen)
 	limr := &io.LimitedReader{r, int64(maxTotalBytes + 1)}
 	if _, err := io.Copy(w, limr); err != nil {
-		return nil, fmt.Errorf("edmain decompress: %v", err)
+		return nil, fmt.Errorf("edmain/decompress: %v", err)
 	}
 	if limr.N == 0 {
-		return nil, fmt.Errorf("edmain decompress limit: decompress reached the limit of %d MB", maxTotalBytes/1e6)
+		return nil, fmt.Errorf("edmain/decompress limit: decompress reached the limit of %d MB", maxTotalBytes/1e6)
 	}
 	return textar.Parse(kvs, w.String()), nil
 }

@@ -19,7 +19,7 @@ func New() *VersionSystem { return &VersionSystem{} }
 func (vs *VersionSystem) Fetch(ctx context.Context) (version string, clean bool, err error) {
 	head, err := vs.Resolve(ctx, "HEAD")
 	if err != nil {
-		return "", false, fmt.Errorf("git fetch HEAD: %v", err)
+		return "", false, fmt.Errorf("git/fetch HEAD: %v", err)
 	}
 	clean = true
 	_, err = exec.Command("git", "diff-index", "--quiet", "HEAD").Output()
@@ -33,11 +33,11 @@ func (vs *VersionSystem) Fetch(ctx context.Context) (version string, clean bool,
 func (*VersionSystem) Resolve(_ context.Context, rev string) (version string, err error) {
 	output, err := exec.Command("git", "rev-parse", "--short", rev).Output()
 	if err != nil {
-		return "", fmt.Errorf("git exec rev-parse: %v (not in git directory?)", err)
+		return "", fmt.Errorf("git/exec rev-parse: %v (not in git directory?)", err)
 	}
 	fields := bytes.Fields(output)
 	if len(fields) != 1 {
-		return "", fmt.Errorf("git split rev-parse: expected one field, got %q", output)
+		return "", fmt.Errorf("git/split rev-parse: expected one field, got %q", output)
 	}
 	return string(bytes.TrimSpace(fields[0])), nil
 }

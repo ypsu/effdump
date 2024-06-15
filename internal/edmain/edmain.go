@@ -60,21 +60,21 @@ func isIdentifier(v string) bool {
 
 func (p *Params) cmdSave(_ context.Context) error {
 	if !p.clean && !p.Force {
-		return fmt.Errorf("edmain clean check: saving from unclean workdir not allowed unless the -force flag is set")
+		return fmt.Errorf("edmain/clean check: saving from unclean workdir not allowed unless the -force flag is set")
 	}
 
 	buf, err := Compress(p.Effects, p.Sepch[0])
 	if err != nil {
-		return fmt.Errorf("edmain marshal: %v", err)
+		return fmt.Errorf("edmain/marshal: %v", err)
 	}
 
 	if err := os.MkdirAll(p.tmpdir, 0o755); err != nil {
-		return fmt.Errorf("edmain make dump dir: %v", err)
+		return fmt.Errorf("edmain/make dump dir: %v", err)
 	}
 
 	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
 	if err := os.WriteFile(fname, buf, 0o644); err != nil {
-		return fmt.Errorf("edmain save: %v", fname)
+		return fmt.Errorf("edmain/save: %v", fname)
 	}
 	fmt.Fprintf(p.Stdout, "effdump for %s saved to %s.\n", p.version, fname)
 	return nil
@@ -84,14 +84,14 @@ func (p *Params) cmdDiff(_ context.Context) error {
 	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
 	buf, err := os.ReadFile(fname)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("edmain load dump: effdump for commit %v not found, git stash and save that version first", p.version)
+		return fmt.Errorf("edmain/load dump: effdump for commit %v not found, git stash and save that version first", p.version)
 	}
 	if err != nil {
-		return fmt.Errorf("edmain load dump: %v", err)
+		return fmt.Errorf("edmain/load dump: %v", err)
 	}
 	lt, err := Uncompress(buf)
 	if err != nil {
-		return fmt.Errorf("edmain unmarshal dump: %v", err)
+		return fmt.Errorf("edmain/unmarshal dump: %v", err)
 	}
 	rt := p.Effects
 	kvs := make([]keyvalue.KV, 0, 16)
@@ -122,10 +122,10 @@ func (p *Params) cmdDiff(_ context.Context) error {
 func (p *Params) Run(ctx context.Context) error {
 	var err error
 	if !isIdentifier(p.Name) {
-		return fmt.Errorf("edmain check name: name %q is not a short alphanumeric identifier", p.Name)
+		return fmt.Errorf("edmain/check name: name %q is not a short alphanumeric identifier", p.Name)
 	}
 	if len(p.Sepch) != 1 {
-		return fmt.Errorf("edmain sepch check: flag -sepch = %q, want a string of length 1", p.Sepch)
+		return fmt.Errorf("edmain/sepch check: flag -sepch = %q, want a string of length 1", p.Sepch)
 	}
 	p.tmpdir = filepath.Join(os.TempDir(), fmt.Sprintf("effdump-%d-%s", os.Getuid(), p.Name))
 	for _, e := range p.Env {
@@ -135,10 +135,10 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 	p.version, p.clean, err = p.FetchVersion(ctx)
 	if err != nil {
-		return fmt.Errorf("edmain fetch version: %v", err)
+		return fmt.Errorf("edmain/fetch version: %v", err)
 	}
 	if !isIdentifier(p.version) {
-		return fmt.Errorf("edmain check version: %q is not a short alphanumeric identifier", p.version)
+		return fmt.Errorf("edmain/check version: %q is not a short alphanumeric identifier", p.version)
 	}
 
 	var subcommand string
@@ -164,7 +164,7 @@ func (p *Params) Run(ctx context.Context) error {
 	case "save":
 		return p.cmdSave(ctx)
 	default:
-		return fmt.Errorf("edmain run subcommand: subcommand %q not found", subcommand)
+		return fmt.Errorf("edmain/run subcommand: subcommand %q not found", subcommand)
 	}
 	return nil
 }
