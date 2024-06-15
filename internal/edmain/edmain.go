@@ -14,6 +14,8 @@ import (
 	"strings"
 	"unicode"
 
+	"github.com/ypsu/effdump/internal/andiff"
+	"github.com/ypsu/effdump/internal/fmtdiff"
 	"github.com/ypsu/effdump/internal/keyvalue"
 	"github.com/ypsu/effdump/internal/textar"
 )
@@ -81,7 +83,7 @@ func (p *Params) cmdSave(_ context.Context) error {
 func (p *Params) cmdDiff(_ context.Context) error {
 	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
 	buf, err := os.ReadFile(fname)
-	if errors.Is(err, os.ErrNotExist) {
+	if err != nil && errors.Is(err, os.ErrNotExist) {
 		return fmt.Errorf("edmain load dump: effdump for commit %v not found, git stash and save that version first", p.version)
 	}
 	if err != nil {
@@ -92,22 +94,27 @@ func (p *Params) cmdDiff(_ context.Context) error {
 		return fmt.Errorf("edmain unmarshal dump: %v", err)
 	}
 	rt := p.Effects
+	kvs := make([]keyvalue.KV, 0, 16)
 
 	for len(lt) > 0 && len(rt) > 0 {
 		switch {
 		case len(rt) == 0 || len(lt) > 0 && lt[0].K < rt[0].K:
-			fmt.Fprintf(p.Stdout, "deleted: %s\n", lt[0].K)
+			d := andiff.Compute(lt[0].V, "")
+			kvs = append(kvs, keyvalue.KV{lt[0].K + " (deleted)", fmtdiff.Unified(d)})
 			lt = lt[1:]
 		case len(lt) == 0 || len(rt) > 0 && lt[0].K > rt[0].K:
-			fmt.Fprintf(p.Stdout, "added: %s\n", rt[0].K)
+			d := andiff.Compute("", rt[0].V)
+			kvs = append(kvs, keyvalue.KV{rt[0].K + " (added)", fmtdiff.Unified(d)})
 			rt = rt[1:]
 		case lt[0].K == rt[0].K && lt[0].V == rt[0].V:
 			lt, rt = lt[1:], rt[1:]
 		default:
-			fmt.Fprintf(p.Stdout, "diff: %s\n", lt[0].K)
+			d := andiff.Compute(lt[0].V, rt[0].V)
+			kvs = append(kvs, keyvalue.KV{lt[0].K + " (changed)", fmtdiff.Unified(d)})
 			lt, rt = lt[1:], rt[1:]
 		}
 	}
+	fmt.Fprintf(p.Stdout, textar.Format(kvs, p.Sepch[0]))
 	return nil
 }
 

@@ -2,6 +2,8 @@
 This test dump contains various number sequences.
 Meant to be a minimal test for testing the basics of the library.
 This is the changed file that contains bunch of random changes.
+For odd the last newline is removed, for odd-noeol a newline is added.
+The rest of the diffs should be straightforward.
 
 --- all
 1
@@ -34,7 +36,6 @@ This is the changed file that contains bunch of random changes.
 5
 7
 9
-
 --- odd-noeol
 1
 3
