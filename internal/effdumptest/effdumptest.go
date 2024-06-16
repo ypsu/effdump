@@ -121,6 +121,16 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
 	run()
 
+	desc = `nums-print/dup-error
+		There's a duplicate entry added in this one.
+
+			testdump print
+	`
+	p.Args = []string{"print"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	p.Effects = append(p.Effects, keyvalue.KV{"all", "another all entry"})
+	run()
+
 	desc = `nums-diff/base-no-args
 		Diffing base against base without args should have no output.
 

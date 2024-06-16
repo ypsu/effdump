@@ -155,6 +155,11 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 
 	slices.SortFunc(p.Effects, func(a, b keyvalue.KV) int { return cmp.Compare(a.K, b.K) })
+	for i := 1; i < len(p.Effects); i++ {
+		if p.Effects[i].K == p.Effects[i-1].K {
+			return fmt.Errorf("edmain/unique check: key %q duplicated", p.Effects[i].K)
+		}
+	}
 
 	switch subcommand {
 	case "diff":
