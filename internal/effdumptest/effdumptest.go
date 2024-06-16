@@ -121,6 +121,33 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
 	run()
 
+	desc = `nums-print/two-args
+		Printing without args should print only the even and odd effects.
+
+			testdump print even odd
+	`
+	p.Args = []string{"print", "even", "odd"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
+	desc = `nums-print/oddglob-arg
+		Printing without args should print all effects starting with "o*".
+
+			testdump print odd*
+	`
+	p.Args = []string{"print", "odd*"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
+	desc = `nums-print/glob-arg
+		Printing without args should print all effects containing "o".
+
+			testdump print *o*
+	`
+	p.Args = []string{"print", "*o*"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
 	desc = `nums-print/dup-error
 		There's a duplicate entry added in this one.
 
@@ -146,6 +173,15 @@ func mkdump() (*effdump.Dump, error) {
 			testdump diff
 	`
 	p.Args = []string{"diff"}
+	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	run()
+
+	desc = `nums-diff/changed-glob-arg
+		Diffing base against changed without args should have print all diffs for effects starting with "even".
+
+			testdump diff even*
+	`
+	p.Args = []string{"diff", "even*"}
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run()
 
