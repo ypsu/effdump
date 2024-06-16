@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strings"
 	"unicode"
@@ -172,4 +173,25 @@ func (p *Params) Run(ctx context.Context) error {
 		return fmt.Errorf("edmain/run subcommand: subcommand %q not found", subcommand)
 	}
 	return nil
+}
+
+// MakeRE makes a single regex from a set of globs.
+func MakeRE(globs ...string) *regexp.Regexp {
+	if len(globs) == 0 {
+		return regexp.MustCompile("")
+	}
+	expr := &strings.Builder{}
+	expr.WriteString("^(")
+	for i, glob := range globs {
+		if i != 0 {
+			expr.WriteByte('|')
+		}
+		parts := strings.Split(glob, "*")
+		for i, part := range parts {
+			parts[i] = regexp.QuoteMeta(part)
+		}
+		expr.WriteString(strings.Join(parts, ".*"))
+	}
+	expr.WriteString(")$")
+	return regexp.MustCompile(expr.String())
 }

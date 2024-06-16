@@ -59,6 +59,15 @@ func mkdump() (*effdump.Dump, error) {
 	d := effdump.New("effdumptest")
 	addStringifyEffects(d)
 
+	// Test the glob parser.
+	addglob := func(name string, globs ...string) {
+		d.Add("globs/"+name, fmt.Sprintf("%q\n%s", globs, edmain.MakeRE(globs...)))
+	}
+	addglob("empty")
+	addglob("static-one", "apple")
+	addglob("static-two", "apple", "banana")
+	addglob("special-three", "*apple", "*ba*na*na", "cherry*", "da.|?[a-z]te")
+
 	// Set up common helpers.
 	desc, w, log := "", &strings.Builder{}, &strings.Builder{}
 	fetchVersion, fetchClean, fetchErr := "dummyversion", true, error(nil)
