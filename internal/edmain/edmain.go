@@ -145,11 +145,10 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 
 	var subcommand string
+	var args []string
 	if len(p.Args) >= 1 {
-		subcommand = p.Args[0]
-		p.filter = MakeRE(p.Args[1:]...)
+		subcommand, args = p.Args[0], p.Args[1:]
 	} else {
-		p.filter = MakeRE()
 		if p.clean {
 			fmt.Fprintln(p.Stdout, `NOTE: subcommand not given, picking "save" because working dir is clean.`)
 			subcommand = "save"
@@ -158,9 +157,10 @@ func (p *Params) Run(ctx context.Context) error {
 			subcommand = "diff"
 		}
 	}
-	if subcommand == "save" && len(p.Args) >= 2 {
-		return fmt.Errorf("edmain/got %d positional arguments for save, want 0", len(p.Args)-1)
+	if subcommand == "save" && len(args) >= 1 {
+		return fmt.Errorf("edmain/got %d positional arguments for save, want 0", len(args))
 	}
+	p.filter = MakeRE(args...)
 
 	slices.SortFunc(p.Effects, func(a, b keyvalue.KV) int { return cmp.Compare(a.K, b.K) })
 	p.Effects = slices.DeleteFunc(p.Effects, func(kv keyvalue.KV) bool { return !p.filter.MatchString(kv.K) })
