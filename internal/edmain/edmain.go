@@ -36,9 +36,10 @@ type Params struct {
 	Sepch string
 
 	// Internal helper vars.
-	tmpdir  string // the dir for storing this effdump's versions
-	version string // the baseline version of the source
-	clean   bool   // whether the working dir is clean
+	tmpdir  string         // the dir for storing this effdump's versions
+	version string         // the baseline version of the source
+	clean   bool           // whether the working dir is clean
+	filter  *regexp.Regexp // the entries to print or diff
 }
 
 // RegisterFlags registers effdump's flags into a flagset.
@@ -94,6 +95,7 @@ func (p *Params) cmdDiff(_ context.Context) error {
 	if err != nil {
 		return fmt.Errorf("edmain/unmarshal dump: %v", err)
 	}
+	lt = slices.DeleteFunc(lt, func(kv keyvalue.KV) bool { return !p.filter.MatchString(kv.K) })
 	rt := p.Effects
 	kvs := make([]keyvalue.KV, 0, 16)
 
@@ -145,7 +147,9 @@ func (p *Params) Run(ctx context.Context) error {
 	var subcommand string
 	if len(p.Args) >= 1 {
 		subcommand = p.Args[0]
+		p.filter = MakeRE(p.Args[1:]...)
 	} else {
+		p.filter = MakeRE()
 		if p.clean {
 			fmt.Fprintln(p.Stdout, `NOTE: subcommand not given, picking "save" because working dir is clean.`)
 			subcommand = "save"
@@ -154,8 +158,12 @@ func (p *Params) Run(ctx context.Context) error {
 			subcommand = "diff"
 		}
 	}
+	if subcommand == "save" && len(p.Args) >= 2 {
+		return fmt.Errorf("edmain/got %d positional arguments for save, want 0", len(p.Args)-1)
+	}
 
 	slices.SortFunc(p.Effects, func(a, b keyvalue.KV) int { return cmp.Compare(a.K, b.K) })
+	p.Effects = slices.DeleteFunc(p.Effects, func(kv keyvalue.KV) bool { return !p.filter.MatchString(kv.K) })
 	for i := 1; i < len(p.Effects); i++ {
 		if p.Effects[i].K == p.Effects[i-1].K {
 			return fmt.Errorf("edmain/unique check: key %q duplicated", p.Effects[i].K)

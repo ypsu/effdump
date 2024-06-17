@@ -1,4 +1,5 @@
-- print: add simple globbing support (do this instead of regexes; rewrite glob to regex via the help of regexp.quotemeta)
+- edmain: add a hash subcommand and a Hash function to Dump
+- test: save effdumptest's hash and have it auto-updated from pre-commit
 - compress: avoid rewriting if the hash of the dump is the same; read hash from gzip header
 - stringify: json pretty print everything except for stringers and strings
 - edmain: add a clean command that deletes everything from the target directory
