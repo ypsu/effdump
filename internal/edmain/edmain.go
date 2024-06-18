@@ -117,7 +117,12 @@ func (p *Params) cmdDiff(_ context.Context) error {
 			lt, rt = lt[1:], rt[1:]
 		}
 	}
-	fmt.Fprintf(p.Stdout, textar.Format(kvs, p.Sepch[0]))
+	for i, e := range kvs {
+		if e.V != "" {
+			kvs[i].V = "\t" + strings.ReplaceAll(e.V, "\n", "\n\t")
+		}
+	}
+	fmt.Fprintln(p.Stdout, textar.Format(kvs, p.Sepch[0]))
 	return nil
 }
 
@@ -174,7 +179,13 @@ func (p *Params) Run(ctx context.Context) error {
 	case "diff":
 		return p.cmdDiff(ctx)
 	case "print":
-		fmt.Fprintln(p.Stdout, textar.Format(p.Effects, p.Sepch[0]))
+		kvs := slices.Clone(p.Effects)
+		for i, e := range kvs {
+			if e.V != "" {
+				kvs[i].V = "\t" + strings.ReplaceAll(e.V, "\n", "\n\t")
+			}
+		}
+		fmt.Fprintln(p.Stdout, textar.Format(kvs, p.Sepch[0]))
 	case "printraw":
 		if len(args) != 1 {
 			return fmt.Errorf("edmain/printraw: got %d args, want 1", len(args))
