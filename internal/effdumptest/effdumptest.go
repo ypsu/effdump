@@ -167,6 +167,42 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = append(p.Effects, keyvalue.KV{"all", "another all entry"})
 	run()
 
+	desc = `nums-printraw/no-args
+		printraw expects one argument exactly.
+
+			testdump printraw
+	`
+	p.Args = []string{"printraw"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
+	desc = `nums-printraw/one-arg
+		printraw expects one argument exactly.
+
+			testdump even
+	`
+	p.Args = []string{"printraw", "even"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
+	desc = `nums-printraw/two-args
+		printraw expects one argument exactly.
+
+			testdump even odd
+	`
+	p.Args = []string{"printraw", "even", "odd"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
+	desc = `nums-printraw/glob-arg
+		printraw expects one argument exactly. Doesn't take globs.
+
+			testdump even
+	`
+	p.Args = []string{"printraw", "ev*"}
+	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	run()
+
 	desc = `nums-diff/base-no-args
 		Diffing base against base without args should have no output.
 

@@ -175,6 +175,17 @@ func (p *Params) Run(ctx context.Context) error {
 		return p.cmdDiff(ctx)
 	case "print":
 		fmt.Fprintln(p.Stdout, textar.Format(p.Effects, p.Sepch[0]))
+	case "printraw":
+		if len(args) != 1 {
+			return fmt.Errorf("edmain/printraw: got %d args, want 1", len(args))
+		}
+		for _, e := range p.Effects {
+			if e.K == args[0] {
+				fmt.Fprint(p.Stdout, e.V)
+				return nil
+			}
+		}
+		return fmt.Errorf("edmain/printraw: key %q not found", args[0])
 	case "save":
 		return p.cmdSave(ctx)
 	default:
