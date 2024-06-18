@@ -161,6 +161,12 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("diff", "even*")
 
+	group = "nums-hash"
+	setdesc("no-args", "Print the hash of the nums effdump.")
+	run("hash")
+	setdesc("some-args", "Subcommand hash doesn't take args")
+	run("hash", "even")
+
 	return d, nil
 }
 
