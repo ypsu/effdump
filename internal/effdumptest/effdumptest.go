@@ -87,11 +87,15 @@ func mkdump() (*effdump.Dump, error) {
 			return fetchVersion, fetchErr
 		},
 	}
-	run := func() {
+	reset := func() {
+		p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+	}
+	run := func(args ...string) {
 		kvs, name := make([]keyvalue.KV, 1, 4), ""
 		desc = strings.ReplaceAll(desc, "\n\t\t", "\n") // Deindent.
 		name, desc, _ = strings.Cut(desc, "\n")
-		kvs[0] = keyvalue.KV{"desc", desc}
+		kvs[0] = keyvalue.KV{"desc", fmt.Sprintf("%s\nargs: testdump %q", desc, args)}
+		p.Args = args
 		err := p.Run(ctx)
 		if w.Len() > 0 {
 			kvs = append(kvs, keyvalue.KV{"stdout", w.String()})
@@ -109,9 +113,13 @@ func mkdump() (*effdump.Dump, error) {
 			debuglog.Reset()
 		}
 		d.Add(name, textar.Format(kvs, '~'))
+
+		// Reset defaults for the next testcase.
+		reset()
 	}
 
-	// The baseline for the following test will be numsbase.
+	// The baseline for the following tests will be numsbase.
+	reset()
 	fetchVersion = "numsbase"
 	gz, err := edmain.Compress(textar.Parse(nil, testdata("numsbase.textar")), '=')
 	if err != nil {
@@ -123,112 +131,66 @@ func mkdump() (*effdump.Dump, error) {
 
 	desc = `nums-print/no-args
 		Printing without args should print all the effects.
-
-			testdump print
 	`
-	p.Args = []string{"print"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("print")
 
 	desc = `nums-print/two-args
 		Printing without args should print only the even and odd effects.
-
-			testdump print even odd
 	`
-	p.Args = []string{"print", "even", "odd"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("print", "even", "odd")
 
 	desc = `nums-print/oddglob-arg
 		Printing without args should print all effects starting with "o*".
-
-			testdump print odd*
 	`
-	p.Args = []string{"print", "odd*"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("print", "odd*")
 
 	desc = `nums-print/glob-arg
 		Printing without args should print all effects containing "o".
-
-			testdump print *o*
 	`
-	p.Args = []string{"print", "*o*"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("print", "*o*")
 
 	desc = `nums-print/dup-error
 		There's a duplicate entry added in this one.
-
-			testdump print
 	`
-	p.Args = []string{"print"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
 	p.Effects = append(p.Effects, keyvalue.KV{"all", "another all entry"})
-	run()
+	run("print")
 
 	desc = `nums-printraw/no-args
 		printraw expects one argument exactly.
-
-			testdump printraw
 	`
-	p.Args = []string{"printraw"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("printraw")
 
 	desc = `nums-printraw/one-arg
 		printraw expects one argument exactly.
-
-			testdump even
 	`
-	p.Args = []string{"printraw", "even"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("printraw", "even")
 
 	desc = `nums-printraw/two-args
 		printraw expects one argument exactly.
-
-			testdump even odd
 	`
-	p.Args = []string{"printraw", "even", "odd"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("printraw", "even", "odd")
 
 	desc = `nums-printraw/glob-arg
 		printraw expects one argument exactly. Doesn't take globs.
-
-			testdump even
 	`
-	p.Args = []string{"printraw", "ev*"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("printraw", "ev*")
 
 	desc = `nums-diff/base-no-args
 		Diffing base against base without args should have no output.
-
-			testdump diff
 	`
-	p.Args = []string{"diff"}
-	p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	run()
+	run("diff")
 
 	desc = `nums-diff/changed-no-args
 		Diffing base against changed without args should have print all diffs.
-
-			testdump diff
 	`
-	p.Args = []string{"diff"}
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
-	run()
+	run("diff")
 
 	desc = `nums-diff/changed-glob-arg
 		Diffing base against changed without args should have print all diffs for effects starting with "even".
-
-			testdump diff even*
 	`
-	p.Args = []string{"diff", "even*"}
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
-	run()
+	run("diff", "even*")
 
 	return d, nil
 }
