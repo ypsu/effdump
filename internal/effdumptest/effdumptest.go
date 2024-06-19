@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -88,6 +89,7 @@ func mkdump() (*effdump.Dump, error) {
 		},
 	}
 	reset := func() {
+		fetchVersion, fetchClean = "numsbase", true
 		p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
 	}
 	run := func(args ...string) {
@@ -119,7 +121,6 @@ func mkdump() (*effdump.Dump, error) {
 
 	// The baseline for the following tests will be numsbase.
 	reset()
-	fetchVersion = "numsbase"
 	numsbase := textar.Parse(nil, testdata("numsbase.textar"))
 	gz, err := edmain.Compress(numsbase, '=', edmain.Hash(numsbase))
 	if err != nil {
@@ -161,6 +162,22 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("changed-glob-arg", "Diffing base against changed without args should have print all diffs for effects starting with 'even'.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("diff", "even*")
+	setdesc("nonexistent-baseline", "Diffing against a baseline that doesn't exist.")
+	fetchVersion = "nonexistent"
+	run("diff")
+	setdesc("bad-baseline", "Diffing against a baseline that can't be parsed.")
+	{
+		badkvs := append(slices.Clone(numsbase), keyvalue.KV{"aaa", "somevalue"})
+		gz, err := edmain.Compress(badkvs, '=', edmain.Hash(badkvs))
+		if err != nil {
+			return nil, fmt.Errorf("effdumptest/compress badkvs: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(tmpdir, "badkvs.gz"), gz, 0o644); err != nil {
+			return nil, fmt.Errorf("effdumptest/write badkvs.gz: %v", err)
+		}
+		fetchVersion = "badkvs"
+		run("diff")
+	}
 
 	group = "nums-hash"
 	setdesc("no-args", "Print the hash of the nums effdump.")

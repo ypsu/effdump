@@ -105,6 +105,11 @@ func (p *Params) cmdDiff(_ context.Context) error {
 	if err != nil {
 		return fmt.Errorf("edmain/unmarshal dump: %v", err)
 	}
+	for i := 1; i < len(lt); i++ {
+		if lt[i].K <= lt[i-1].K {
+			return fmt.Errorf("edmain/sort check of %s: %dth key not in order (corrupted? re-save the version)", p.version, i)
+		}
+	}
 	lt = slices.DeleteFunc(lt, func(kv keyvalue.KV) bool { return !p.filter.MatchString(kv.K) })
 	rt := p.Effects
 	kvs := make([]keyvalue.KV, 0, 16)

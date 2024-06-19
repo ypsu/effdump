@@ -31,9 +31,6 @@ func Compress(kvs []keyvalue.KV, sepch byte, hash uint64) (data []byte, err erro
 			// This library wasn't designed for this huge size.
 			return nil, fmt.Errorf("edmain marshal: effects size is %d MB, limit is %d MB", dumplen/1e6, maxTotalBytes/1e6)
 		}
-		if kvs[i-1].K >= kvs[i].K {
-			return nil, fmt.Errorf("edmain marshal: %dth effect not in sorted order", i)
-		}
 	}
 
 	buf := &bytes.Buffer{}
