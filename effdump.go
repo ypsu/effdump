@@ -3,6 +3,7 @@ package effdump
 
 import (
 	"bufio"
+	"cmp"
 	"context"
 	"flag"
 	"fmt"
@@ -42,6 +43,19 @@ func AddMap[M ~map[K]V, K comparable, V any](d *Dump, m M) {
 	for k, v := range m {
 		d.Add(k, v)
 	}
+}
+
+// Hash hashes the values in the dump.
+// Returns the same value as the hash subcommand.
+// Returns 0 if there are duplicated keys in the dump.
+func (d *Dump) Hash() uint64 {
+	slices.SortFunc(d.params.Effects, func(a, b keyvalue.KV) int { return cmp.Compare(a.K, b.K) })
+	for i := 1; i < len(d.params.Effects); i++ {
+		if d.params.Effects[i].K == d.params.Effects[i-1].K {
+			return 0
+		}
+	}
+	return edmain.Hash(d.params.Effects)
 }
 
 // Run writes/diffs the effdump named `name`.
