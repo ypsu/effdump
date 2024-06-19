@@ -65,17 +65,26 @@ func (p *Params) cmdSave(_ context.Context) error {
 	if !p.clean && !p.Force {
 		return fmt.Errorf("edmain/clean check: saving from unclean workdir not allowed unless the -force flag is set")
 	}
-
-	buf, err := Compress(p.Effects, p.Sepch[0])
-	if err != nil {
-		return fmt.Errorf("edmain/marshal: %v", err)
-	}
+	hash := Hash(p.Effects)
 
 	if err := os.MkdirAll(p.tmpdir, 0o755); err != nil {
 		return fmt.Errorf("edmain/make dump dir: %v", err)
 	}
 
 	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
+	if f, err := os.Open(fname); err == nil {
+		gotHash := PeekHash(f)
+		f.Close()
+		if gotHash == hash {
+			fmt.Fprintf(p.Stdout, "NOTE: skipped writing %s because it already exists and looks the same.\n", fname)
+			return nil
+		}
+	}
+
+	buf, err := Compress(p.Effects, p.Sepch[0], hash)
+	if err != nil {
+		return fmt.Errorf("edmain/marshal: %v", err)
+	}
 	if err := os.WriteFile(fname, buf, 0o644); err != nil {
 		return fmt.Errorf("edmain/save: %v", fname)
 	}

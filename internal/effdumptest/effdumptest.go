@@ -120,7 +120,8 @@ func mkdump() (*effdump.Dump, error) {
 	// The baseline for the following tests will be numsbase.
 	reset()
 	fetchVersion = "numsbase"
-	gz, err := edmain.Compress(textar.Parse(nil, testdata("numsbase.textar")), '=')
+	numsbase := textar.Parse(nil, testdata("numsbase.textar"))
+	gz, err := edmain.Compress(numsbase, '=', edmain.Hash(numsbase))
 	if err != nil {
 		return nil, fmt.Errorf("effdumptest/compress numsbase: %v", err)
 	}

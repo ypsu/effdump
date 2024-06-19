@@ -1,5 +1,5 @@
 - test: add testcase for the no-arg mode
-- compress: avoid rewriting if the hash of the dump is the same; read hash from gzip header
+- test: add test for flags and one where flag comes after command
 - stringify: json pretty print everything except for stringers and strings
 - edmain: add a clean command that deletes everything from the target directory
 - fmtdiff: add SetHunkHeaderRE(re string) error and SetHunkHeaderREs(keyglob, re ...string) error (default could be ^\S)

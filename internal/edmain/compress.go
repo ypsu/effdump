@@ -19,7 +19,7 @@ const (
 // Compress compresses `kvs` into a byte stream suitable for saving to disk.
 // It's a gzip compressed textar with sepch used as the separator character.
 // Returns an error if kvs is not sorted or encoding hit internal limits.
-func Compress(kvs []keyvalue.KV, sepch byte) (data []byte, err error) {
+func Compress(kvs []keyvalue.KV, sepch byte, hash uint64) (data []byte, err error) {
 	if len(kvs) > maxEntries {
 		// This library wasn't designed for this huge size.
 		return nil, fmt.Errorf("edmain marshal: effects count is %d K, limit is %d K", len(kvs)/1e3, maxEntries/1e3)
@@ -38,7 +38,7 @@ func Compress(kvs []keyvalue.KV, sepch byte) (data []byte, err error) {
 
 	buf := &bytes.Buffer{}
 	ar, w := textar.Format([]keyvalue.KV(kvs), sepch), gzip.NewWriter(buf)
-	w.Header.Comment = fmt.Sprintf("effdump %d %d", len(kvs), len(ar))
+	w.Header.Comment = fmt.Sprintf("effdump %d %d %016x", len(kvs), len(ar), hash)
 	_, err = io.Copy(w, strings.NewReader(ar))
 	if err != nil {
 		return nil, fmt.Errorf("edmain/compress: %v", err)
@@ -71,4 +71,16 @@ func Uncompress(data []byte) ([]keyvalue.KV, error) {
 		return nil, fmt.Errorf("edmain/decompress limit: decompress reached the limit of %d MB", maxTotalBytes/1e6)
 	}
 	return textar.Parse(kvs, w.String()), nil
+}
+
+// PeekHash returns the hash stored in the gzip header.
+func PeekHash(f io.Reader) uint64 {
+	r, err := gzip.NewReader(f)
+	if err != nil {
+		return 0
+	}
+	var entriesCount, textarLen int
+	var hash uint64
+	fmt.Sscanf(r.Header.Comment, "effdump %d %d %x", &entriesCount, &textarLen, &hash)
+	return hash
 }
