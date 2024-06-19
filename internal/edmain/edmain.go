@@ -7,6 +7,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"hash/fnv"
 	"io"
 	"os"
 	"path/filepath"
@@ -178,6 +179,12 @@ func (p *Params) Run(ctx context.Context) error {
 	switch subcommand {
 	case "diff":
 		return p.cmdDiff(ctx)
+	case "hash":
+		if len(args) > 0 {
+			return fmt.Errorf("edmain/hash: got %d args, want 0", len(args))
+		}
+		fmt.Fprintf(p.Stdout, "%016x\n", Hash(p.Effects))
+		return nil
 	case "print":
 		kvs := slices.Clone(p.Effects)
 		for i, e := range kvs {
@@ -186,6 +193,7 @@ func (p *Params) Run(ctx context.Context) error {
 			}
 		}
 		fmt.Fprintln(p.Stdout, textar.Format(kvs, p.Sepch[0]))
+		return nil
 	case "printraw":
 		if len(args) != 1 {
 			return fmt.Errorf("edmain/printraw: got %d args, want 1", len(args))
@@ -202,7 +210,6 @@ func (p *Params) Run(ctx context.Context) error {
 	default:
 		return fmt.Errorf("edmain/run subcommand: subcommand %q not found", subcommand)
 	}
-	return nil
 }
 
 // MakeRE makes a single regex from a set of globs.
@@ -224,4 +231,14 @@ func MakeRE(globs ...string) *regexp.Regexp {
 	}
 	expr.WriteString(")$")
 	return regexp.MustCompile(expr.String())
+}
+
+// Hash hashes a keyvalue slice.
+func Hash(kvs []keyvalue.KV) uint64 {
+	h := fnv.New64()
+	for _, kv := range kvs {
+		h.Write([]byte(kv.K))
+		h.Write([]byte(kv.V))
+	}
+	return h.Sum64()
 }
