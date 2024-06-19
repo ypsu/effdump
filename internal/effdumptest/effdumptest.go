@@ -4,6 +4,7 @@ package main
 import (
 	"context"
 	"embed"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -76,7 +77,6 @@ func mkdump() (*effdump.Dump, error) {
 		Name:   "testdump",
 		Env:    []string{"EFFDUMP_DIR=" + tmpdir},
 		Stdout: w,
-		Sepch:  "-",
 
 		FetchVersion: func(context.Context) (string, bool, error) {
 			edbg.Printf("FetchVersion() -> (%q, %t, %v)\n", fetchVersion, fetchClean, fetchErr)
@@ -95,10 +95,17 @@ func mkdump() (*effdump.Dump, error) {
 	run := func(args ...string) {
 		kvs := make([]keyvalue.KV, 1, 4)
 		kvs[0] = keyvalue.KV{"desc", fmt.Sprintf("%s\n\nargs: testdump %q", desc, args)}
-		p.Args = args
+		fs := flag.NewFlagSet("effdumptest", flag.ContinueOnError)
+		p.RegisterFlags(fs)
+		if err := fs.Parse(args); err != nil {
+			kvs = append(kvs, keyvalue.KV{"flagparse-error", err.Error()})
+		}
+		p.Args = fs.Args()
+		p.Sepch = "-"
 		err := p.Run(ctx)
 		if w.Len() > 0 {
-			kvs = append(kvs, keyvalue.KV{"stdout", w.String()})
+			stdout := strings.ReplaceAll(w.String(), tmpdir, "/tmpdir")
+			kvs = append(kvs, keyvalue.KV{"stdout", stdout})
 			w.Reset()
 		}
 		if err != nil {
@@ -178,12 +185,37 @@ func mkdump() (*effdump.Dump, error) {
 		fetchVersion = "badkvs"
 		run("diff")
 	}
+	setdesc("diff-by-default", "Diff is the default command to run in unclean clients.")
+	fetchClean = false
+	p.Effects = slices.Clone(numsbase)
+	p.Effects[1].V += "10\n"
+	run()
 
 	group = "nums-hash"
 	setdesc("no-args", "Print the hash of the nums effdump.")
 	run("hash")
 	setdesc("some-args", "Subcommand hash doesn't take args")
 	run("hash", "even")
+
+	group = "nums-save"
+	setdesc("with-args", "Save cannot take args.")
+	run("save", "somearg")
+	setdesc("unclean-save-not-forced", "Save in unclean client needs -force.")
+	fetchVersion, fetchClean = "saved", false
+	run("save")
+	setdesc("unclean-save-forced", "Save in unclean client works with -forced.")
+	fetchVersion, fetchClean = "saved", false
+	run("-force", "save")
+	setdesc("clean-save-skipped", "Save of an already existing file with the same hash is skipped.")
+	fetchVersion, fetchClean = "saved", true
+	run("save")
+	setdesc("clean-save-rewritten", "Save of an already existing file with different hash is not skipped.")
+	os.Truncate(filepath.Join(tmpdir, "saved.gz"), 0)
+	fetchVersion, fetchClean = "saved", true
+	run("save")
+	setdesc("save-by-default", "Save is the default command in clean commands.")
+	fetchVersion, fetchClean = "saved", true
+	run()
 
 	return d, nil
 }

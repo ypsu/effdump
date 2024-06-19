@@ -18,16 +18,16 @@ import (
 
 // Dump represesents an effdump.
 type Dump struct {
-	params edmain.Params
+	params          edmain.Params
+	registeredFlags bool
 }
 
 // New initializes a new Dump.
 func New(name string) *Dump {
-	d := &Dump{edmain.Params{
+	d := &Dump{params: edmain.Params{
 		Name: name,
 		Env:  os.Environ(),
 	}}
-	d.params.RegisterFlags(flag.CommandLine)
 	return d
 }
 
@@ -58,10 +58,20 @@ func (d *Dump) Hash() uint64 {
 	return edmain.Hash(d.params.Effects)
 }
 
+// RegisterFlags registers effdump's flags into a flagset.
+// If not called, flags are autoregistered into flag.CommandLine in Run().
+func (d *Dump) RegisterFlags(fs *flag.FlagSet) {
+	d.registeredFlags = true
+	d.params.RegisterFlags(fs)
+}
+
 // Run writes/diffs the effdump named `name`.
 // This is meant to be overtake the main() function once the effect map is computed, this function never returns.
 // Its behavior is dependent on the command line, see the package comment.
 func (d *Dump) Run(ctx context.Context) {
+	if !d.registeredFlags {
+		d.RegisterFlags(flag.CommandLine)
+	}
 	flag.Parse()
 
 	// Check for bad flag usage.
