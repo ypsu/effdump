@@ -137,7 +137,7 @@ func mkdump() (*effdump.Dump, error) {
 		return nil, fmt.Errorf("effdumptest/write numsbase.gz: %v", err)
 	}
 
-	group = "nums-print"
+	group = "print"
 	setdesc("no-args", "Printing without args should print all the effects.")
 	run("print")
 	setdesc("two-args", "Printing without args should print only the even and odd effects.")
@@ -150,7 +150,7 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = append(p.Effects, keyvalue.KV{"all", "another all entry"})
 	run("print")
 
-	group = "nums-printraw"
+	group = "printraw"
 	setdesc("no-args", "printraw expects one argument exactly.")
 	run("printraw")
 	setdesc("one-arg", "printraw expects one argument exactly.")
@@ -160,7 +160,7 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("glob-arg", "printraw expects one argument exactly. Doesn't take globs.")
 	run("printraw", "ev*")
 
-	group = "nums-diff"
+	group = "diff"
 	setdesc("base-no-args", "Diffing base against base without args should have no output.")
 	run("diff")
 	setdesc("changed-no-args", "Diffing base against changed without args should have print all diffs.")
@@ -191,13 +191,13 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects[1].V += "10\n"
 	run()
 
-	group = "nums-hash"
+	group = "hash"
 	setdesc("no-args", "Print the hash of the nums effdump.")
 	run("hash")
 	setdesc("some-args", "Subcommand hash doesn't take args")
 	run("hash", "even")
 
-	group = "nums-save"
+	group = "save"
 	setdesc("with-args", "Save cannot take args.")
 	run("save", "somearg")
 	setdesc("unclean-save-not-forced", "Save in unclean client needs -force.")
