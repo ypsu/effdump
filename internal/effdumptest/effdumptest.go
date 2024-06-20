@@ -254,6 +254,14 @@ func mkdump() (*effdump.Dump, error) {
 	fetchVersion, fetchClean = "saved", true
 	run()
 
+	group = "cmd-clear"
+	setdesc("with-args", "Clear cannot take args.")
+	run("clear", "somearg")
+	setdesc("normal", "Clear deletes the files.")
+	run("clear")
+	setdesc("empty", "Clear deletes nothing.")
+	run("clear")
+
 	return d, nil
 }
 
