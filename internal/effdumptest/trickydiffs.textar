@@ -707,3 +707,53 @@
  7
  8
  9
+
+=== 40
+ func fn(arg int) {
+   // some comment.
+   some calculation.
+
++  // moar comments.
++  moar calculations.
++
+   // return result.
+   return result
+ }
+=== 41
+ func fn(arg int) {
+   // some comment.
+   some calculation.
+
+-  // moar comments.
+-  moar calculations.
+-
+   // return result.
+   return result
+ }
+=== 42
+ {
+   {
+     subobject = "x"
+   }
+
+   name = "obj a"
+   value = "a's value"
+ }
+
++{
++  {
++    subobject = "x"
++  }
++
++  name = "obj b"
++  value = "b's value"
++}
++
+ {
+   {
+     subobject = "x"
+   }
+
+   name = "obj c"
+   value = "c's value"
+ }
