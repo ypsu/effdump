@@ -13,8 +13,10 @@ import (
 	"time"
 
 	"github.com/ypsu/effdump"
+	"github.com/ypsu/effdump/internal/andiff"
 	"github.com/ypsu/effdump/internal/edbg"
 	"github.com/ypsu/effdump/internal/edmain"
+	"github.com/ypsu/effdump/internal/fmtdiff"
 	"github.com/ypsu/effdump/internal/keyvalue"
 	"github.com/ypsu/effdump/internal/textar"
 )
@@ -70,7 +72,35 @@ func mkdump() (*effdump.Dump, error) {
 	addglob("static-two", "apple", "banana")
 	addglob("special-three", "*apple", "*ba*na*na", "cherry*", "da.|?[a-z]te")
 
-	// Set up common helpers.
+	// Test the differ.
+	diffar := textar.Parse(nil, testdata("trickydiffs.textar"))
+	for _, kv := range diffar {
+		lt, rt := &strings.Builder{}, &strings.Builder{}
+		for _, line := range strings.Split(kv.V, "\n") {
+			if line == "" {
+				line = " "
+			}
+			firstchar := line[0]
+			switch firstchar {
+			case '-':
+				lt.WriteString(line[1:] + "\n")
+			case '+':
+				rt.WriteString(line[1:] + "\n")
+			default:
+				lt.WriteString(line[1:] + "\n")
+				rt.WriteString(line[1:] + "\n")
+			}
+		}
+		diff := fmtdiff.Unified(andiff.Compute(lt.String(), rt.String()))
+		kvs := make([]keyvalue.KV, 0, 3)
+		kvs = append(kvs, keyvalue.KV{"input", kv.V})
+		kvs = append(kvs, keyvalue.KV{"result", diff})
+		kvs = append(kvs, keyvalue.KV{"debuglog", debuglog.String()})
+		debuglog.Reset()
+		d.Add("diffs/"+kv.K, textar.Format(kvs, '-'))
+	}
+
+	// Set up common helpers for the CLI tests.
 	group, key, desc, w, log := "", "", "", &strings.Builder{}, &strings.Builder{}
 	fetchVersion, fetchClean, fetchErr := "dummyversion", true, error(nil)
 	p := &edmain.Params{
@@ -137,7 +167,7 @@ func mkdump() (*effdump.Dump, error) {
 		return nil, fmt.Errorf("effdumptest/write numsbase.gz: %v", err)
 	}
 
-	group = "print"
+	group = "cmd-print"
 	setdesc("no-args", "Printing without args should print all the effects.")
 	run("print")
 	setdesc("two-args", "Printing without args should print only the even and odd effects.")
@@ -150,7 +180,7 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = append(p.Effects, keyvalue.KV{"all", "another all entry"})
 	run("print")
 
-	group = "printraw"
+	group = "cmd-printraw"
 	setdesc("no-args", "printraw expects one argument exactly.")
 	run("printraw")
 	setdesc("one-arg", "printraw expects one argument exactly.")
@@ -160,7 +190,7 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("glob-arg", "printraw expects one argument exactly. Doesn't take globs.")
 	run("printraw", "ev*")
 
-	group = "diff"
+	group = "cmd-diff"
 	setdesc("base-no-args", "Diffing base against base without args should have no output.")
 	run("diff")
 	setdesc("changed-no-args", "Diffing base against changed without args should have print all diffs.")
@@ -191,13 +221,13 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects[1].V += "10\n"
 	run()
 
-	group = "hash"
+	group = "cmd-hash"
 	setdesc("no-args", "Print the hash of the nums effdump.")
 	run("hash")
 	setdesc("some-args", "Subcommand hash doesn't take args")
 	run("hash", "even")
 
-	group = "save"
+	group = "cmd-save"
 	setdesc("with-args", "Save cannot take args.")
 	run("save", "somearg")
 	setdesc("unclean-save-not-forced", "Save in unclean client needs -force.")
