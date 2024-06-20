@@ -17,6 +17,7 @@ import (
 	"unicode"
 
 	"github.com/ypsu/effdump/internal/andiff"
+	"github.com/ypsu/effdump/internal/edbg"
 	"github.com/ypsu/effdump/internal/fmtdiff"
 	"github.com/ypsu/effdump/internal/keyvalue"
 	"github.com/ypsu/effdump/internal/textar"
@@ -191,6 +192,22 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 
 	switch subcommand {
+	case "clear":
+		if len(args) > 0 {
+			return fmt.Errorf("edmain/clear: got %d args, want 0", len(args))
+		}
+		var deletedFiles int
+		files, _ := filepath.Glob(filepath.Join(p.tmpdir, "*.gz"))
+		htmlFiles, _ := filepath.Glob(filepath.Join(p.tmpdir, "*.html"))
+		for _, f := range append(files, htmlFiles...) {
+			if os.Remove(f) == nil { // on success
+				edbg.Printf("Deleted %s.\n", filepath.Base(f))
+				deletedFiles++
+			}
+		}
+		os.Remove(p.tmpdir)
+		fmt.Fprintf(p.Stdout, "Removed %d files from %s.\n", deletedFiles, p.tmpdir)
+		return nil
 	case "diff":
 		return p.cmdDiff(ctx)
 	case "hash":
