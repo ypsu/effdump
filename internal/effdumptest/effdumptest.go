@@ -180,6 +180,13 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = append(p.Effects, keyvalue.KV{"all", "another all entry"})
 	run("print")
 
+	group = "cmd-keys"
+	setdesc("no-args", "Printing without args should print all the keys.")
+	run("keys")
+	group = "cmd-keys"
+	setdesc("globs", "Printing with args should print the matching keys.")
+	run("keys", "*o*")
+
 	group = "cmd-printraw"
 	setdesc("no-args", "printraw expects one argument exactly.")
 	run("printraw")

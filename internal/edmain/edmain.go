@@ -199,6 +199,11 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 		fmt.Fprintf(p.Stdout, "%016x\n", Hash(p.Effects))
 		return nil
+	case "keys":
+		for _, e := range p.Effects {
+			fmt.Fprintln(p.Stdout, e.K)
+		}
+		return nil
 	case "print":
 		kvs := slices.Clone(p.Effects)
 		for i, e := range kvs {

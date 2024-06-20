@@ -26,7 +26,7 @@ if test -z "$noxx" && grep -Hni xx""x $allfiles; then
   exit 1
 fi
 
-if test -z "$gofiles"; then
+if test -n "$gofiles"; then
   # Go specific tests in this branch.
   echo -n 'formatting...'
   gofmt -l $gofiles >"$tmpfile" 2>&1
@@ -68,4 +68,4 @@ if test "$gothash" != "$wanthash"; then
   exit 1
 fi
 
-rm "$tmpfile"
+rm -f "$tmpfile"
