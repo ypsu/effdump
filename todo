@@ -1,5 +1,5 @@
 - stringify: json pretty print everything except for stringers and strings
-- edmain: add a clean command that deletes everything from the target directory
+- edmain: add a clean command that deletes *.gz and *.html files from the target directory
 - fmtdiff: add SetHunkHeaderRE(re string) error and SetHunkHeaderREs(keyglob, re ...string) error (default could be ^\S)
 - examples: add a markdown example too
 - flag: add -template=key flag for choosing a "template" to use on lhs side for new rhs keys instead of the empty value
