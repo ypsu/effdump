@@ -757,3 +757,49 @@
    name = "obj c"
    value = "c's value"
  }
+=== 50
+ a
+ b
+ c
++a
++b
++c
+ a
+ b
+ c
+=== 51
+ a
+ b
+ c
+ x
++a
++b
++c
+ y
+ a
+ b
+ c
+=== 53
+ a
+ b
+ c
+-x
+-y
++X
++a
++b
++c
++Y
+ a
+ b
+ c
+=== 54
+ a
+ b
+ c
++1
++2
++3
+ a
+ b
+ c
