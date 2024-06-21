@@ -9,11 +9,13 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"net/http"
 	"os"
 	"path/filepath"
 	"regexp"
 	"slices"
 	"strings"
+	"time"
 	"unicode"
 
 	"github.com/ypsu/effdump/internal/andiff"
@@ -34,8 +36,9 @@ type Params struct {
 	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
 
 	// Flags. Must be parsed by the caller after RegisterFlags.
-	Force bool
-	Sepch string
+	Address string
+	Force   bool
+	Sepch   string
 
 	// Internal helper vars.
 	tmpdir  string         // the dir for storing this effdump's versions
@@ -46,6 +49,7 @@ type Params struct {
 
 // RegisterFlags registers effdump's flags into a flagset.
 func (p *Params) RegisterFlags(fs *flag.FlagSet) {
+	fs.StringVar(&p.Address, "address", ":8080", "The address to serve webdiff on.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 }
@@ -243,6 +247,17 @@ func (p *Params) Run(ctx context.Context) error {
 		return fmt.Errorf("edmain/printraw: key %q not found", args[0])
 	case "save":
 		return p.cmdSave(ctx)
+	case "web":
+		diff := "hello word"
+		t, content := time.Now(), strings.NewReader(diff)
+		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+			http.ServeContent(w, req, "diff.html", t, content)
+		})
+		fmt.Fprintf(os.Stderr, "Serving HTML diff on %s.\n", p.Address)
+		if err := http.ListenAndServe(p.Address, handler); err != nil {
+			return fmt.Errorf("edmain/ListenAndServe: %v", err)
+		}
+		return nil
 	default:
 		return fmt.Errorf("edmain/run subcommand: subcommand %q not found", subcommand)
 	}
