@@ -198,7 +198,7 @@ func mkdump() (*effdump.Dump, error) {
 	run("printraw", "ev*")
 
 	group = "cmd-diff"
-	setdesc("base-no-args", "Diffing base against base without args should have no output.")
+	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
 	run("diff")
 	setdesc("changed-no-args", "Diffing base against changed without args should have print all diffs.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))

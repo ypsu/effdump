@@ -1,5 +1,5 @@
 - edmain: add help.
-- edmain: print "No diffs." if there are no diffs.
+- edmain: allow specifying baseline; also diff against the most recent effdump?
 - stringify: json pretty print everything except for stringers and strings
 - fmtdiff: add SetHunkHeaderRE(re string) error and SetHunkHeaderREs(keyglob, re ...string) error (default could be ^\S)
 - examples: add a markdown example too

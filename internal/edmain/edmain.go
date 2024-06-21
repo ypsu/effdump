@@ -142,7 +142,11 @@ func (p *Params) cmdDiff(_ context.Context) error {
 			kvs[i].V = "\t" + strings.ReplaceAll(e.V, "\n", "\n\t")
 		}
 	}
-	fmt.Fprintln(p.Stdout, textar.Format(kvs, p.Sepch[0]))
+	if len(kvs) > 0 {
+		fmt.Fprintln(p.Stdout, textar.Format(kvs, p.Sepch[0]))
+	} else {
+		fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
+	}
 	return nil
 }
 
