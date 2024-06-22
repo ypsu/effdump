@@ -32,6 +32,7 @@ type Params struct {
 	Stdout         io.Writer
 	Args           []string
 	Env            []string
+	Flagset        *flag.FlagSet // for Usage().
 	FetchVersion   func(context.Context) (version string, clean bool, err error)
 	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
 
@@ -47,8 +48,36 @@ type Params struct {
 	filter  *regexp.Regexp // the entries to print or diff
 }
 
+// Usage prints a help message to p.Stdout.
+func (p *Params) Usage() {
+	p.Stdout.Write([]byte(`effdump: generate and diff an effect dump.
+
+Subcommands:
+
+- clear: Delete this effdump's cache: all previously stored dumps and html reports in its temp dir.
+- diff: Print an unified diff between HEAD dump and the current version. Takes a list of key globs for filtering.
+- help: This usage string.
+- hash: Prints the hash of the dump. The hash includes the key names too.
+- htmldiff: Generate a HTML formatted diff between HEAD dump and the current version.
+- keys: Print the list of keys the dump has.
+- print: Print the dump to stdout. Takes a list of key globs for filtering.
+- printraw: Print one effect to stdout without any decoration. Needs one argument for the key.
+- save: Save the current version of the dump to the temp dir.
+- web: Serve the HTML formatted diff between HEAD dump and the current version.
+
+Key globs: * is replaced with arbitrary number of characters. "hello" matches the glob "*o*".
+
+Flags:
+
+`))
+	p.Flagset.SetOutput(p.Stdout)
+	p.Flagset.PrintDefaults()
+}
+
 // RegisterFlags registers effdump's flags into a flagset.
 func (p *Params) RegisterFlags(fs *flag.FlagSet) {
+	p.Flagset = fs
+	fs.Usage = p.Usage
 	fs.StringVar(&p.Address, "address", ":8080", "The address to serve webdiff on.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
@@ -223,6 +252,9 @@ func (p *Params) Run(ctx context.Context) error {
 			return fmt.Errorf("edmain/hash: got %d args, want 0", len(args))
 		}
 		fmt.Fprintf(p.Stdout, "%016x\n", Hash(p.Effects))
+		return nil
+	case "help":
+		p.Usage()
 		return nil
 	case "keys":
 		for _, e := range p.Effects {

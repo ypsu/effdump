@@ -167,6 +167,10 @@ func mkdump() (*effdump.Dump, error) {
 		return nil, fmt.Errorf("effdumptest/write numsbase.gz: %v", err)
 	}
 
+	group = "cmd-help"
+	setdesc("help", "Help prints the usage string.")
+	run("help")
+
 	group = "cmd-print"
 	setdesc("no-args", "Printing without args should print all the effects.")
 	run("print")

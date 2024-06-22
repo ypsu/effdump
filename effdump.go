@@ -25,8 +25,9 @@ type Dump struct {
 // New initializes a new Dump.
 func New(name string) *Dump {
 	d := &Dump{params: edmain.Params{
-		Name: name,
-		Env:  os.Environ(),
+		Name:   name,
+		Env:    os.Environ(),
+		Stdout: os.Stderr, // temporary for error reporting
 	}}
 	return d
 }
