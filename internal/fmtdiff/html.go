@@ -9,17 +9,21 @@ import (
 	"github.com/ypsu/effdump/internal/andiff"
 )
 
+type diffentry struct {
+	name string
+	diff andiff.Diff
+}
+
 // HTMLFormatter collects html-formatted diffs.
 type HTMLFormatter struct {
 	lines map[string]int
-	diffs map[string]andiff.Diff
+	diffs []diffentry
 }
 
 // NewHTMLFormatter creates a new HTMLFormatter.
 func NewHTMLFormatter() *HTMLFormatter {
 	return &HTMLFormatter{
 		lines: map[string]int{},
-		diffs: map[string]andiff.Diff{},
 	}
 }
 
@@ -31,7 +35,7 @@ func (hf *HTMLFormatter) Add(name string, d andiff.Diff) {
 	for _, line := range d.RT {
 		hf.lines[line] = 0
 	}
-	hf.diffs[name] = d
+	hf.diffs = append(hf.diffs, diffentry{name, d})
 }
 
 type safeWriter struct {
@@ -64,6 +68,24 @@ func (hf *HTMLFormatter) WriteTo(w io.Writer) (totalwritten int64, err error) {
 		printf("'%s',\n", html.EscapeString(line))
 	}
 	printf("]\n")
+
+	printf("let diffs = {\n")
+	for _, de := range hf.diffs {
+		printf("  '%s': {\n    lt: [", de.name)
+		for _, line := range de.diff.LT {
+			printf("%d,", hf.lines[line])
+		}
+		printf("]\n    rt: [")
+		for _, line := range de.diff.RT {
+			printf("%d,", hf.lines[line])
+		}
+		printf("]\n    ops: [")
+		for _, op := range de.diff.Ops {
+			printf("%d,%d,%d,", op.Del, op.Add, op.Keep)
+		}
+		printf("]\n  }\n")
+	}
+	printf("}\n")
 
 	return int64(sw.n), sw.err
 }
