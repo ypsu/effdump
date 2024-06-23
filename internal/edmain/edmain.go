@@ -238,7 +238,7 @@ func (p *Params) Run(ctx context.Context) error {
 		uf := fmtdiff.NewUnifiedFormatter(p.Sepch[0])
 		n, err := p.diff(uf.Add)
 		if err != nil {
-			return fmt.Errorf("edmain/cmdDiff: %v", err)
+			return fmt.Errorf("edmain/diff: %v", err)
 		}
 		if n == 0 {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
@@ -283,8 +283,19 @@ func (p *Params) Run(ctx context.Context) error {
 	case "save":
 		return p.cmdSave(ctx)
 	case "web":
-		diff := "hello word"
-		t, content := time.Now(), strings.NewReader(diff)
+		hf := fmtdiff.NewHTMLFormatter()
+		n, err := p.diff(hf.Add)
+		if err != nil {
+			return fmt.Errorf("edmain/web: %v", err)
+		}
+		if n == 0 {
+			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
+			return nil
+		}
+		w := &strings.Builder{}
+		w.Grow(4096)
+		hf.WriteTo(w)
+		t, content := time.Now(), strings.NewReader(w.String())
 		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 			http.ServeContent(w, req, "diff.html", t, content)
 		})
