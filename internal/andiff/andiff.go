@@ -5,8 +5,6 @@ package andiff
 
 import (
 	"strings"
-
-	"github.com/ypsu/effdump/internal/edbg"
 )
 
 // Op describes a single diff operation / transformation.
@@ -49,20 +47,5 @@ func Compute(lt, rt string) Diff {
 		ops = append(ops, Op{0, 0, topcomm})
 	}
 	ops = append(ops, Op{len(x) - topcomm - botcomm, len(y) - topcomm - botcomm, botcomm})
-	d := Diff{x, y, ops}
-	if edbg.Printf != nil {
-		// Dump diff data for debugging.
-		if false {
-			// TODO: Switch to this.
-			edbg.Printf("Diff data, len(LT):%d, len(RT):%d\n", len(d.LT), len(d.RT))
-			for _, op := range d.Ops {
-				edbg.Printf("  del:%d add:%d keep:%d\n", op.Del, op.Add, op.Keep)
-			}
-		}
-		edbg.Printf("Diff data, len(LT):%d, len(RT):%d, topcommon:%d,\n", len(d.LT), len(d.RT), topcomm)
-		for _, op := range d.Ops[1:] {
-			edbg.Printf("  lt:%d rt:%d common:%d\n", op.Del, op.Add, op.Keep)
-		}
-	}
-	return d
+	return Diff{x, y, ops}
 }
