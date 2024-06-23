@@ -39,6 +39,7 @@ type Params struct {
 	// Flags. Must be parsed by the caller after RegisterFlags.
 	Address string
 	Force   bool
+	Output  string
 	Sepch   string
 
 	// Internal helper vars.
@@ -80,6 +81,7 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.Usage = p.Usage
 	fs.StringVar(&p.Address, "address", ":8080", "The address to serve webdiff on.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
+	fs.StringVar(&p.Output, "o", "", "Override the output file for htmldiff and htmlprint.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 }
 
@@ -255,6 +257,18 @@ func (p *Params) Run(ctx context.Context) error {
 	case "help":
 		p.Usage()
 		return nil
+	case "htmldiff":
+		hf := fmtdiff.NewHTMLFormatter()
+		n, err := p.diff(hf.Add)
+		if err != nil {
+			return fmt.Errorf("edmain/htmldiff: %v", err)
+		}
+		if n == 0 {
+			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
+			return nil
+		}
+		_, err = hf.WriteTo(p.Stdout)
+		return err
 	case "keys":
 		for _, e := range p.Effects {
 			fmt.Fprintln(p.Stdout, e.K)
