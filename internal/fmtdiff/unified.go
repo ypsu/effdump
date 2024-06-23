@@ -44,12 +44,12 @@ func Unified(d andiff.Diff) string {
 	w := &strings.Builder{}
 	w.Grow(256)
 	ops, x, y, xi, yi, keep := d.Ops, d.LT, d.RT, 0, 0, 0
-	if d.Ops[0].Del == 0 && d.Ops[0].Add == 0 && d.Ops[0].Keep > ctx+2 {
+	if d.Ops[0].Del == 0 && d.Ops[0].Add == 0 && d.Ops[0].Keep > ctx+3 {
 		fmt.Fprintf(w, "@@ %d common lines @@\n", d.Ops[0].Keep-ctx)
 		xi, yi, keep, ops = d.Ops[0].Keep-ctx, d.Ops[0].Keep-ctx, ctx, ops[1:]
 	}
 	for _, op := range ops {
-		if keep > 2*ctx+1 {
+		if keep > 2*ctx+3 {
 			for i := 0; i < ctx; i++ {
 				fmt.Fprintf(w, " %s\n", x[xi+i])
 			}
@@ -68,7 +68,7 @@ func Unified(d andiff.Diff) string {
 		}
 	}
 	common := 0
-	if keep > ctx+2 {
+	if keep > ctx+3 {
 		keep, common = ctx, keep-ctx
 	}
 	for xe := xi + keep; xi < xe; xi++ {
