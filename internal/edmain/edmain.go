@@ -126,57 +126,46 @@ func (p *Params) cmdSave(_ context.Context) error {
 	return nil
 }
 
-func (p *Params) cmdDiff(_ context.Context) error {
+// diff diffs the current version against the baseline and records the diffs.
+// Returns 0 if both sides are the same.
+func (p *Params) diff(record func(string, andiff.Diff)) (int, error) {
 	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
 	buf, err := os.ReadFile(fname)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return fmt.Errorf("edmain/load dump: effdump for commit %v not found, git stash and save that version first", p.version)
+		return 0, fmt.Errorf("edmain/load dump: effdump for commit %v not found, git stash and save that version first", p.version)
 	}
 	if err != nil {
-		return fmt.Errorf("edmain/load dump: %v", err)
+		return 0, fmt.Errorf("edmain/load dump: %v", err)
 	}
 	lt, err := Uncompress(buf)
 	if err != nil {
-		return fmt.Errorf("edmain/unmarshal dump: %v", err)
+		return 0, fmt.Errorf("edmain/unmarshal dump: %v", err)
 	}
 	for i := 1; i < len(lt); i++ {
 		if lt[i].K <= lt[i-1].K {
-			return fmt.Errorf("edmain/sort check of %s: %dth key not in order (corrupted? re-save the version)", p.version, i)
+			return 0, fmt.Errorf("edmain/sort check of %s: %dth key not in order (corrupted? re-save the version)", p.version, i)
 		}
 	}
 	lt = slices.DeleteFunc(lt, func(kv keyvalue.KV) bool { return !p.filter.MatchString(kv.K) })
 	rt := p.Effects
-	kvs := make([]keyvalue.KV, 0, 16)
 
+	n := 0
 	for len(lt) > 0 && len(rt) > 0 {
 		switch {
 		case len(rt) == 0 || len(lt) > 0 && lt[0].K < rt[0].K:
-			d := andiff.Compute(lt[0].V, "")
-			kvs = append(kvs, keyvalue.KV{lt[0].K + " (deleted)", fmtdiff.Unified(d)})
-			lt = lt[1:]
+			record(lt[0].K+" (deleted)", andiff.Compute(lt[0].V, ""))
+			lt, n = lt[1:], n+1
 		case len(lt) == 0 || len(rt) > 0 && lt[0].K > rt[0].K:
-			d := andiff.Compute("", rt[0].V)
-			kvs = append(kvs, keyvalue.KV{rt[0].K + " (added)", fmtdiff.Unified(d)})
-			rt = rt[1:]
+			record(rt[0].K+" (added)", andiff.Compute("", rt[0].V))
+			rt, n = rt[1:], n+1
 		case lt[0].K == rt[0].K && lt[0].V == rt[0].V:
 			lt, rt = lt[1:], rt[1:]
 		default:
-			d := andiff.Compute(lt[0].V, rt[0].V)
-			kvs = append(kvs, keyvalue.KV{lt[0].K + " (changed)", fmtdiff.Unified(d)})
-			lt, rt = lt[1:], rt[1:]
+			record(lt[0].K+" (changed)", andiff.Compute(lt[0].V, rt[0].V))
+			lt, rt, n = lt[1:], rt[1:], n+1
 		}
 	}
-	for i, e := range kvs {
-		if e.V != "" {
-			kvs[i].V = "\t" + strings.ReplaceAll(e.V, "\n", "\n\t")
-		}
-	}
-	if len(kvs) > 0 {
-		fmt.Fprintln(p.Stdout, textar.Format(kvs, p.Sepch[0]))
-	} else {
-		fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
-	}
-	return nil
+	return n, nil
 }
 
 // Run runs effdump's main CLI logic.
@@ -246,7 +235,17 @@ func (p *Params) Run(ctx context.Context) error {
 		fmt.Fprintf(p.Stdout, "Removed %d files from %s.\n", deletedFiles, p.tmpdir)
 		return nil
 	case "diff":
-		return p.cmdDiff(ctx)
+		uf := fmtdiff.NewUnifiedFormatter(p.Sepch[0])
+		n, err := p.diff(uf.Add)
+		if err != nil {
+			return fmt.Errorf("edmain/cmdDiff: %v", err)
+		}
+		if n == 0 {
+			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
+			return nil
+		}
+		_, err = uf.WriteTo(p.Stdout)
+		return err
 	case "hash":
 		if len(args) > 0 {
 			return fmt.Errorf("edmain/hash: got %d args, want 0", len(args))

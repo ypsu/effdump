@@ -3,10 +3,40 @@ package fmtdiff
 
 import (
 	"fmt"
+	"io"
 	"strings"
 
 	"github.com/ypsu/effdump/internal/andiff"
+	"github.com/ypsu/effdump/internal/keyvalue"
+	"github.com/ypsu/effdump/internal/textar"
 )
+
+// UnifiedFormatter collects unified-formatted diffs into a textar.
+type UnifiedFormatter struct {
+	kvs     []keyvalue.KV
+	sepchar byte
+}
+
+// NewUnifiedFormatter creates a new UnifiedFormatter.
+func NewUnifiedFormatter(sepchar byte) *UnifiedFormatter {
+	return &UnifiedFormatter{sepchar: sepchar}
+}
+
+// Add adds a diff's unified representation to the result.
+func (uf *UnifiedFormatter) Add(name string, d andiff.Diff) {
+	difftext := Unified(d)
+	if difftext != "" {
+		difftext = "\t" + strings.ReplaceAll(difftext, "\n", "\n\t")
+	}
+	uf.kvs = append(uf.kvs, keyvalue.KV{name, difftext})
+}
+
+// WriteTo writes the resulting textar to w.
+func (uf *UnifiedFormatter) WriteTo(w io.Writer) (int, error) {
+	n, err := io.WriteString(w, textar.Format(uf.kvs, uf.sepchar))
+	w.Write([]byte("\n"))
+	return n + 1, err
+}
 
 // Unified prints unified diff, suitable for terminal output.
 func Unified(d andiff.Diff) string {
