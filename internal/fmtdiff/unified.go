@@ -22,7 +22,7 @@ func NewUnifiedFormatter(sepchar byte) *UnifiedFormatter {
 	return &UnifiedFormatter{sepchar: sepchar}
 }
 
-// Add adds a diff's unified representation to the result.
+// Add Adds a diff's unified representation to the result.
 func (uf *UnifiedFormatter) Add(name string, d andiff.Diff) {
 	difftext := Unified(d)
 	if difftext != "" {
@@ -40,35 +40,42 @@ func (uf *UnifiedFormatter) WriteTo(w io.Writer) (int, error) {
 
 // Unified prints unified diff, suitable for terminal output.
 func Unified(d andiff.Diff) string {
+	ctx := 3
 	w := &strings.Builder{}
 	w.Grow(256)
-	start := 0
-	if d.Ops[0] > 5 {
-		fmt.Fprintf(w, "@@ %d common lines @@\n", d.Ops[0]-3)
-		start = d.Ops[0] - 3
+	ops, x, y, xi, yi, keep := d.Ops, d.LT, d.RT, 0, 0, 0
+	if d.Ops[0].Del == 0 && d.Ops[0].Add == 0 && d.Ops[0].Keep > ctx+2 {
+		fmt.Fprintf(w, "@@ %d common lines @@\n", d.Ops[0].Keep-ctx)
+		xi, yi, keep, ops = d.Ops[0].Keep-ctx, d.Ops[0].Keep-ctx, ctx, ops[1:]
 	}
-	for i := start; i < d.Ops[0]; i++ {
-		fmt.Fprintf(w, " %s\n", d.LT[i])
+	for _, op := range ops {
+		if keep > 2*ctx+1 {
+			for i := 0; i < ctx; i++ {
+				fmt.Fprintf(w, " %s\n", x[xi+i])
+			}
+			fmt.Fprintf(w, "@@ %d common lines @@\n", keep-2*ctx)
+			keep, xi, yi = ctx, xi+keep-ctx, yi+keep-ctx
+		}
+		for xe := xi + keep; xi < xe; xi++ {
+			fmt.Fprintf(w, " %s\n", x[xi])
+		}
+		keep, yi = op.Keep, yi+keep
+		for xe := xi + op.Del; xi < xe; xi++ {
+			fmt.Fprintf(w, "-%s\n", x[xi])
+		}
+		for ye := yi + op.Add; yi < ye; yi++ {
+			fmt.Fprintf(w, "+%s\n", y[yi])
+		}
 	}
-	x, y := d.LT[d.Ops[0]:], d.RT[d.Ops[0]:]
-	for i := 1; i < len(d.Ops); i += 3 {
-		for j := 0; j < d.Ops[i]; j++ {
-			fmt.Fprintf(w, "-%s\n", x[j])
-		}
-		for j := 0; j < d.Ops[i+1]; j++ {
-			fmt.Fprintf(w, "+%s\n", y[j])
-		}
-		if d.Ops[i+2] > 5 && i+3 == len(d.Ops) {
-			for j := 0; j < 3; j++ {
-				fmt.Fprintf(w, " %s\n", x[d.Ops[i]+j])
-			}
-			fmt.Fprintf(w, "@@ %d common lines @@\n", d.Ops[i+2]-3)
-		} else {
-			for j := 0; j < d.Ops[i+2]; j++ {
-				fmt.Fprintf(w, " %s\n", x[d.Ops[i]+j])
-			}
-		}
-		x, y = x[d.Ops[i]+d.Ops[i+2]:], y[d.Ops[i+1]+d.Ops[i+2]:]
+	common := 0
+	if keep > ctx+2 {
+		keep, common = ctx, keep-ctx
+	}
+	for xe := xi + keep; xi < xe; xi++ {
+		fmt.Fprintf(w, " %s\n", x[xi])
+	}
+	if common > 0 {
+		fmt.Fprintf(w, "@@ %d common lines @@\n", common)
 	}
 	return w.String()
 }

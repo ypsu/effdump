@@ -9,17 +9,17 @@ import (
 	"github.com/ypsu/effdump/internal/edbg"
 )
 
+// Op describes a single diff operation / transformation.
+type Op struct {
+	Del, Add, Keep int
+}
+
 // Diff describes a diff.
 type Diff struct {
 	// The individual left and right lines.
 	LT, RT []string
 
-	// The zig-zag representation of the diff operations in terms of lines.
-	// It's [common, left-remove, right-add, common, left-remove, ..., right-add, common].
-	// E.g. [2, 1, 1, 3] means 2 common lines at top, one changed line, and 3 common lines at the bottom.
-	// Or [5] means there's no diff and both sides have the same 5 lines.
-	// The length of this slice is 3*k+1 where k is the number of diff chunks.
-	Ops []int
+	Ops []Op
 }
 
 func split(s string) []string {
@@ -35,7 +35,7 @@ func split(s string) []string {
 func Compute(lt, rt string) Diff {
 	x, y := split(lt), split(rt)
 	if lt == rt {
-		return Diff{x, y, []int{len(x)}}
+		return Diff{x, y, []Op{{0, 0, len(x)}}}
 	}
 	var topcomm, botcomm int
 	for topcomm < min(len(x), len(y)) && x[topcomm] == y[topcomm] {
@@ -44,12 +44,24 @@ func Compute(lt, rt string) Diff {
 	for botcomm < min(len(x), len(y)) && len(x)-botcomm > topcomm && len(y)-botcomm > topcomm && x[len(x)-botcomm-1] == y[len(y)-botcomm-1] {
 		botcomm++
 	}
-	d := Diff{x, y, []int{topcomm, len(x) - topcomm - botcomm, len(y) - topcomm - botcomm, botcomm}}
+	ops := make([]Op, 0, 2)
+	if topcomm > 0 {
+		ops = append(ops, Op{0, 0, topcomm})
+	}
+	ops = append(ops, Op{len(x) - topcomm - botcomm, len(y) - topcomm - botcomm, botcomm})
+	d := Diff{x, y, ops}
 	if edbg.Printf != nil {
 		// Dump diff data for debugging.
-		edbg.Printf("Diff data, len(LT):%d, len(RT):%d, topcommon:%d,\n", len(d.LT), len(d.RT), d.Ops[0])
-		for i := 1; i < len(d.Ops); i += 3 {
-			edbg.Printf("  lt:%d rt:%d common:%d\n", d.Ops[i], d.Ops[i+1], d.Ops[i+2])
+		if false {
+			// TODO: Switch to this.
+			edbg.Printf("Diff data, len(LT):%d, len(RT):%d\n", len(d.LT), len(d.RT))
+			for _, op := range d.Ops {
+				edbg.Printf("  del:%d add:%d keep:%d\n", op.Del, op.Add, op.Keep)
+			}
+		}
+		edbg.Printf("Diff data, len(LT):%d, len(RT):%d, topcommon:%d,\n", len(d.LT), len(d.RT), topcomm)
+		for _, op := range d.Ops[1:] {
+			edbg.Printf("  lt:%d rt:%d common:%d\n", op.Del, op.Add, op.Keep)
 		}
 	}
 	return d
