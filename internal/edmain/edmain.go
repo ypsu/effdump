@@ -2,6 +2,7 @@
 package edmain
 
 import (
+	"bytes"
 	"cmp"
 	"context"
 	"errors"
@@ -9,6 +10,7 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
+	"math/rand"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -37,10 +39,10 @@ type Params struct {
 	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
 
 	// Flags. Must be parsed by the caller after RegisterFlags.
-	Address string
-	Force   bool
-	Output  string
-	Sepch   string
+	Address    string
+	Force      bool
+	OutputFile string
+	Sepch      string
 
 	// Internal helper vars.
 	tmpdir  string         // the dir for storing this effdump's versions
@@ -81,7 +83,7 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.Usage = p.Usage
 	fs.StringVar(&p.Address, "address", ":8080", "The address to serve webdiff on.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
-	fs.StringVar(&p.Output, "o", "", "Override the output file for htmldiff and htmlprint.")
+	fs.StringVar(&p.OutputFile, "o", "", "Override the output file for htmldiff and htmlprint. Use - to write to stdout.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 }
 
@@ -192,6 +194,16 @@ func (p *Params) Run(ctx context.Context) error {
 	if !isIdentifier(p.version) {
 		return fmt.Errorf("edmain/check version: %q is not a short alphanumeric identifier", p.version)
 	}
+	if p.OutputFile == "" {
+		const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
+		now := time.Now()
+		for {
+			p.OutputFile = filepath.Join(p.tmpdir, fmt.Sprintf("%d%c%04d.html", now.Year()%100, alpha[min(now.YearDay()/7, 51)], rand.Intn(1e4)))
+			if _, err := os.Stat(p.OutputFile); err != nil {
+				break
+			}
+		}
+	}
 
 	var subcommand string
 	var args []string
@@ -267,8 +279,25 @@ func (p *Params) Run(ctx context.Context) error {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
 			return nil
 		}
-		_, err = hf.WriteTo(p.Stdout)
-		return err
+		if p.OutputFile == "-" {
+			_, err := hf.WriteTo(p.Stdout)
+			if err != nil {
+				return fmt.Errorf("edmain/htmldiff to stdout: %v", err)
+			}
+			return nil
+		}
+		w := bytes.NewBuffer(make([]byte, 0, 1<<16))
+		hf.WriteTo(w)
+		err = os.WriteFile(p.OutputFile, w.Bytes(), 0644)
+		if err != nil {
+			return fmt.Errorf("edmain/htmldiff: %v", err)
+		}
+		err = os.WriteFile(p.OutputFile, w.Bytes(), 0644)
+		if err != nil {
+			return fmt.Errorf("edmain/htmldiff: %v", err)
+		}
+		fmt.Fprintf(p.Stdout, "NOTE: Output written to %s.\n", p.OutputFile)
+		return nil
 	case "keys":
 		for _, e := range p.Effects {
 			fmt.Fprintln(p.Stdout, e.K)

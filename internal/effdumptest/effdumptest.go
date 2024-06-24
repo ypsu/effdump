@@ -132,6 +132,7 @@ func mkdump() (*effdump.Dump, error) {
 		}
 		p.Args = fs.Args()
 		p.Sepch = "-"
+		p.OutputFile = "-"
 		err := p.Run(ctx)
 		if w.Len() > 0 {
 			stdout := strings.ReplaceAll(w.String(), tmpdir, "/tmpdir")
