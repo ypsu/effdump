@@ -66,7 +66,7 @@ Subcommands:
 - print: Print the dump to stdout. Takes a list of key globs for filtering.
 - printraw: Print one effect to stdout without any decoration. Needs one argument for the key.
 - save: Save the current version of the dump to the temp dir.
-- web: Serve the HTML formatted diff between HEAD dump and the current version.
+- webdiff: Serve the HTML formatted diff between HEAD dump and the current version.
 
 Key globs: * is replaced with arbitrary number of characters. "hello" matches the glob "*o*".
 
@@ -325,11 +325,11 @@ func (p *Params) Run(ctx context.Context) error {
 		return fmt.Errorf("edmain/printraw: key %q not found", args[0])
 	case "save":
 		return p.cmdSave(ctx)
-	case "web":
+	case "webdiff":
 		hf := fmtdiff.NewHTMLFormatter()
 		n, err := p.diff(hf.Add)
 		if err != nil {
-			return fmt.Errorf("edmain/web: %v", err)
+			return fmt.Errorf("edmain/webdiff: %v", err)
 		}
 		if n == 0 {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")

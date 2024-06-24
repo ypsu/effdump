@@ -1,4 +1,4 @@
-- edmain: add a htmlprint, webdiff, webprint subcommand
+- edmain: add a htmlprint, webprint subcommand
 - edmain: allow specifying baseline via -version=...; also diff against the most recent effdump?
 - stringify: json pretty print everything except for stringers and strings
 - fmtdiff: add SetHunkHeaderRE(re string) error and SetHunkHeaderREs(keyglob, re ...string) error (default could be ^\S)
