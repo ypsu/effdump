@@ -6,8 +6,16 @@ import (
 	"io"
 	"slices"
 
+	_ "embed"
+
 	"github.com/ypsu/effdump/internal/andiff"
 )
+
+//go:embed header.html
+var htmlHeader []byte
+
+//go:embed render.js
+var renderJS []byte
 
 type diffentry struct {
 	name string
@@ -57,6 +65,9 @@ func (hf *HTMLFormatter) WriteTo(w io.Writer) (totalwritten int64, err error) {
 	sw := &safeWriter{w: w}
 	printf := sw.printf
 
+	printf("%s\n", htmlHeader)
+	printf("%s\n", renderJS)
+
 	lines := make([]string, 0, len(hf.lines))
 	for line := range hf.lines {
 		lines = append(lines, line)
@@ -75,17 +86,18 @@ func (hf *HTMLFormatter) WriteTo(w io.Writer) (totalwritten int64, err error) {
 		for _, line := range de.diff.LT {
 			printf("%d,", hf.lines[line])
 		}
-		printf("]\n    rt: [")
+		printf("],\n    rt: [")
 		for _, line := range de.diff.RT {
 			printf("%d,", hf.lines[line])
 		}
-		printf("]\n    ops: [")
+		printf("],\n    ops: [")
 		for _, op := range de.diff.Ops {
 			printf("%d,%d,%d,", op.Del, op.Add, op.Keep)
 		}
-		printf("]\n  }\n")
+		printf("],\n  },\n")
 	}
 	printf("}\n")
 
+	printf("\nmain()\n</script>\n</body>\n</html>")
 	return int64(sw.n), sw.err
 }
