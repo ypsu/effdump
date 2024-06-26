@@ -154,7 +154,7 @@ func (p *Params) diff(record func(string, andiff.Diff)) (int, error) {
 	rt := p.Effects
 
 	n := 0
-	for len(lt) > 0 && len(rt) > 0 {
+	for len(lt) > 0 || len(rt) > 0 {
 		switch {
 		case len(rt) == 0 || len(lt) > 0 && lt[0].K < rt[0].K:
 			record(lt[0].K+" (deleted)", andiff.Compute(lt[0].V, ""))

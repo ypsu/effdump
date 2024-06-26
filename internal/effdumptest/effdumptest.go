@@ -239,9 +239,9 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("htmldiff")
-	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'even'.")
+	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'ht'.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
-	run("htmldiff", "even")
+	run("htmldiff", "ht*")
 
 	group = "cmd-hash"
 	setdesc("no-args", "Print the hash of the nums effdump.")

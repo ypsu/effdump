@@ -30,6 +30,11 @@ Meant to be a minimal test for testing the basics of the library.
 4
 6
 8
+--- html
+this is an entry with tricky html characters.
+just to confirm that </script> doesn't break the result.
+and that a \n doesn't insert a real newline into the output.
+
 --- many
 10
 11

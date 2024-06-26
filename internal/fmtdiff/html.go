@@ -5,6 +5,7 @@ import (
 	"html"
 	"io"
 	"slices"
+	"strings"
 
 	_ "embed"
 
@@ -76,7 +77,7 @@ func (hf *HTMLFormatter) WriteTo(w io.Writer) (totalwritten int64, err error) {
 	printf("let lines = [\n")
 	for i, line := range lines {
 		hf.lines[line] = i
-		printf("'%s',\n", html.EscapeString(line))
+		printf("'%s',\n", strings.ReplaceAll(html.EscapeString(line), "\\", "&#92;"))
 	}
 	printf("]\n")
 

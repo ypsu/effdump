@@ -30,6 +30,12 @@ The rest of the diffs should be straightforward.
 4
 6
 8
+--- html
+this is an entry with tricky html characters.
+just to confirm that </script> doesn't break the result.
+and that a \n doesn't insert a real newline into the output.
+here's more: &\<>;'".
+
 --- many
 10
 11
