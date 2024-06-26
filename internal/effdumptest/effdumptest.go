@@ -205,10 +205,10 @@ func mkdump() (*effdump.Dump, error) {
 	group = "cmd-diff"
 	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
 	run("diff")
-	setdesc("changed-no-args", "Diffing base against changed without args should have print all diffs.")
+	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("diff")
-	setdesc("changed-glob-arg", "Diffing base against changed without args should have print all diffs for effects starting with 'even'.")
+	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'even'.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("diff", "even*")
 	setdesc("nonexistent-baseline", "Diffing against a baseline that doesn't exist.")
@@ -236,12 +236,12 @@ func mkdump() (*effdump.Dump, error) {
 	group = "cmd-htmldiff"
 	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
 	run("htmldiff")
-	setdesc("changed-no-args", "Diffing base against changed without args should have print all diffs.")
+	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("htmldiff")
-	setdesc("changed-glob-arg", "Diffing base against changed without args should have print all diffs for effects starting with 'even'.")
+	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'even'.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
-	run("htmldiff", "even*")
+	run("htmldiff", "even")
 
 	group = "cmd-hash"
 	setdesc("no-args", "Print the hash of the nums effdump.")
