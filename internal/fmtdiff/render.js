@@ -14,13 +14,13 @@ function main() {
       let del = diffs[name].ops[i]
       let add = diffs[name].ops[i + 1]
       let keep = diffs[name].ops[i + 2]
-      for (let i = 0; i < del; i++) hlt += lines[x[xi++]] + '\n'
+      for (let i = 0; i < del; i++) hlt += lines[x[xi++]]
       for (let i = del; i < add; i++) hlt += '\n'
-      for (let i = 0; i < add; i++) hrt += lines[y[yi++]] + '\n'
+      for (let i = 0; i < add; i++) hrt += lines[y[yi++]]
       for (let i = add; i < del; i++) hrt += '\n'
       while (keep-- > 0) {
-        hlt += lines[x[xi++]] + '\n'
-        hrt += lines[y[yi++]] + '\n'
+        hlt += lines[x[xi++]]
+        hrt += lines[y[yi++]]
       }
     }
     h += `<table>\n`
