@@ -14,9 +14,17 @@ function main() {
       let del = diffs[name].ops[i]
       let add = diffs[name].ops[i + 1]
       let keep = diffs[name].ops[i + 2]
-      for (let i = 0; i < del; i++) hlt += lines[x[xi++]]
+      if (del > 0) {
+        hlt += '<div class=cbgNegative>'
+        for (let i = 0; i < del; i++) hlt += lines[x[xi++]]
+        hlt += '</div>'
+      }
       for (let i = del; i < add; i++) hlt += '\n'
-      for (let i = 0; i < add; i++) hrt += lines[y[yi++]]
+      if (add > 0) {
+        hrt += '<div class=cbgPositive>'
+        for (let i = 0; i < add; i++) hrt += lines[y[yi++]]
+        hrt += '</div>'
+      }
       for (let i = add; i < del; i++) hrt += '\n'
       while (keep-- > 0) {
         hlt += lines[x[xi++]]
