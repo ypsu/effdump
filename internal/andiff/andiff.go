@@ -4,6 +4,7 @@
 package andiff
 
 import (
+	"sort"
 	"strings"
 )
 
@@ -20,6 +21,10 @@ type Diff struct {
 	Ops []Op
 }
 
+// A pair is a pair of values tracked for both the x and y side of a diff.
+// It is typically a pair of line indexes.
+type pair struct{ x, y int }
+
 func split(s string) []string {
 	ss := strings.Split(s, "\n")
 	// Remove last "" but only if we have at least 2 lines so that we always return a non-empty slice.
@@ -35,17 +40,139 @@ func Compute(lt, rt string) Diff {
 	if lt == rt {
 		return Diff{x, y, []Op{{0, 0, len(x)}}}
 	}
-	var topcomm, botcomm int
-	for topcomm < min(len(x), len(y)) && x[topcomm] == y[topcomm] {
-		topcomm++
+
+	var (
+		ms     = tgs(x, y)        // matched lines
+		ops    = make([]Op, 0, 3) // the result
+		xi, yi = 0, 0             // the already processed lines
+	)
+
+	// Determine the common lines at the top.
+	for xi < len(x) && yi < len(y) && x[xi] == y[yi] {
+		xi, yi = xi+1, yi+1
 	}
-	for botcomm < min(len(x), len(y)) && len(x)-botcomm > topcomm && len(y)-botcomm > topcomm && x[len(x)-botcomm-1] == y[len(y)-botcomm-1] {
-		botcomm++
+	if xi > 0 {
+		ops = append(ops, Op{0, 0, xi})
 	}
-	ops := make([]Op, 0, 2)
-	if topcomm > 0 {
-		ops = append(ops, Op{0, 0, topcomm})
+
+	for xi < len(x) && yi < len(y) {
+		// x[xi] and y[yi] is now not equal.
+
+		// Go to the next matching unique line.
+		for ms[0].x < xi || ms[0].y < yi {
+			ms = ms[1:]
+		}
+
+		// m[0] is now the next matching unique line.
+		// Find the next matching line, not necessary unique.
+		// And then find the next differing line too.
+		nxi, nyi := ms[0].x, ms[0].y
+		for nxi > xi && nyi > yi && x[nxi-1] == y[nyi-1] {
+			nxi, nyi = nxi-1, nyi-1
+		}
+		dxi, dyi := nxi, nyi
+		for dxi < len(x) && dyi < len(y) && x[dxi] == y[dyi] {
+			dxi, dyi = dxi+1, dyi+1
+		}
+
+		// todo: try sliding the diff down pure rm or pure add and find the best slide.
+		// best slide is the bottomest line with the min indentation while ignoring empty and whitspace only lines.
+
+		// todo: try splitting the diff via looking for equal lines starting from the top.
+		// not a perfect heuristic but should make the diff better in a lot of common cases.
+
+		ops = append(ops, Op{nxi - xi, nyi - yi, dxi - nxi})
+		xi, yi = dxi, dyi
 	}
-	ops = append(ops, Op{len(x) - topcomm - botcomm, len(y) - topcomm - botcomm, botcomm})
+
+	// add the final operation block if needed.
+	if xi < len(x) || yi < len(y) {
+		ops = append(ops, Op{len(x) - xi, len(y) - yi, 0})
+	}
 	return Diff{x, y, ops}
+}
+
+// tgs returns the pairs of indexes of the longest common subsequence
+// of unique lines in x and y, where a unique line is one that appears
+// once in x and once in y.
+//
+// The longest common subsequence algorithm is as described in
+// Thomas G. Szymanski, "A Special Case of the Maximal Common
+// Subsequence Problem," Princeton TR #170 (January 1975),
+// available at https://research.swtch.com/tgs170.pdf.
+//
+// Stolen (almost) as is from Go's internal code.
+// The xi is [0,1,2,...,n] and then the matching yi is just a permutation of that sequence.
+// Then it's just a standard nlogn longest-increasing-sequence algorithm.
+// It's a pretty neatly implemented, only uses one map and reuses map indices to reduce allocations.
+func tgs(x, y []string) []pair {
+	// Count the number of times each string appears in a and b.
+	// We only care about 0, 1, many, counted as 0, -1, -2
+	// for the x side and 0, -4, -8 for the y side.
+	// Using negative numbers now lets us distinguish positive line numbers later.
+	m := make(map[string]int)
+	for _, s := range x {
+		if c := m[s]; c > -2 {
+			m[s] = c - 1
+		}
+	}
+	for _, s := range y {
+		if c := m[s]; c > -8 {
+			m[s] = c - 4
+		}
+	}
+
+	// Now unique strings can be identified by m[s] = -1+-4.
+	//
+	// Gather the indexes of those strings in x and y, building:
+	//	xi[i] = increasing indexes of unique strings in x.
+	//	yi[i] = increasing indexes of unique strings in y.
+	//	inv[i] = index j such that x[xi[i]] = y[yi[j]].
+	var xi, yi, inv []int
+	for i, s := range y {
+		if m[s] == -1+-4 {
+			m[s] = len(yi)
+			yi = append(yi, i)
+		}
+	}
+	for i, s := range x {
+		if j, ok := m[s]; ok && j >= 0 {
+			xi = append(xi, i)
+			inv = append(inv, j)
+		}
+	}
+
+	// Apply Algorithm A from Szymanski's paper.
+	// In those terms, A = J = inv and B = [0, n).
+	// We add sentinel pairs {0,0}, and {len(x),len(y)}
+	// to the returned sequence, to help the processing loop.
+	J := inv
+	n := len(xi)
+	T := make([]int, n)
+	L := make([]int, n)
+	for i := range T {
+		T[i] = n + 1
+	}
+	for i := 0; i < n; i++ {
+		k := sort.Search(n, func(k int) bool {
+			return T[k] >= J[i]
+		})
+		T[k] = J[i]
+		L[i] = k + 1
+	}
+	k := 0
+	for _, v := range L {
+		if k < v {
+			k = v
+		}
+	}
+	seq := make([]pair, 1+k)
+	seq[k] = pair{len(x), len(y)} // sentinel at end
+	lastj := n
+	for i := n - 1; i >= 0; i-- {
+		if L[i] == k && J[i] < lastj {
+			k, seq[k-1] = k-1, pair{xi[i], yi[J[i]]}
+		}
+	}
+	return seq
 }
