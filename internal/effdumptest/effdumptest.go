@@ -34,9 +34,10 @@ func addStringifyEffects(d *effdump.Dump) {
 	d.Add("stringify/int-string-map", map[int]string{1: "one", 2: "two", 3: "three"})
 	d.Add("stringify/int-multilinestring-map", map[int]string{1: "one line", 2: "two\nlines", 3: "three\nshort\nlines\n", 4: "four\nmore\nshort\nlines"})
 	d.Add("stringify/struct-list", []struct {
-		i int
-		v []string
-	}{{1, []string{"a", "b"}}, {2, []string{"multiline\nstring"}}})
+		I       int
+		V       []string
+		private int
+	}{{1, []string{"a", "b"}, 7}, {2, []string{"multiline\nstring"}, 9}})
 }
 
 func testdata(fn string) string {
