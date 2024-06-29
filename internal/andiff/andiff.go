@@ -102,8 +102,17 @@ func Compute(lt, rt string) Diff {
 			xi, yi, nxi, nyi, dxi, dyi = xi-s, yi-s, nxi-s, nyi-s, dxi-s, dyi-s
 		}
 
-		// todo: try splitting the diff via looking for equal lines starting from the top.
-		// not a perfect heuristic but should make the diff better in a lot of common cases.
+		// Try very dumb heuristic for splitting the diff further if possible.
+		// This improves a few more edge cases without adding much complexity.
+		for txi, tyi := xi, yi; txi < nxi && tyi < nyi; txi, tyi = txi+1, tyi+1 {
+			same := 0
+			for x[txi+same] == y[tyi+same] {
+				same++
+			}
+			if same > 0 {
+				ops, xi, yi, txi, tyi = append(ops, Op{txi - xi, tyi - yi, same}), txi+same, tyi+same, txi+same, tyi+same
+			}
+		}
 
 		ops = append(ops, Op{nxi - xi, nyi - yi, dxi - nxi})
 		xi, yi = dxi, dyi
