@@ -1,10 +1,12 @@
 package fmtdiff
 
 import (
+	"bytes"
 	"fmt"
 	"html"
 	"io"
 	"slices"
+	"strconv"
 	"strings"
 
 	_ "embed"
@@ -66,13 +68,14 @@ func (hf *HTMLFormatter) WriteTo(w io.Writer) (totalwritten int64, err error) {
 	sw := &safeWriter{w: w}
 	printf := sw.printf
 
-	printf("%s\n", htmlHeader)
-	printf("%s\n", renderJS)
-
-	lines := make([]string, 0, len(hf.lines))
+	width, lines := 40, make([]string, 0, len(hf.lines))
 	for line := range hf.lines {
-		lines = append(lines, line)
+		width, lines = max(width, len(line)), append(lines, line)
 	}
+	width = min(120, width)
+
+	printf("%s\n", bytes.ReplaceAll(htmlHeader, []byte("${WIDTH}"), []byte(strconv.Itoa(width+2))))
+	printf("%s\n", renderJS)
 	slices.Sort(lines)
 	printf("let lines = [\n")
 	for i, line := range lines {

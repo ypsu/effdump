@@ -1,12 +1,15 @@
+- edmain: implement bucketing
 - edmain: add a htmlprint, webprint subcommand
 - edmain: allow specifying baseline via -version=...; also diff against the most recent effdump?
 - edmain: add -subitem flag for printraw to parse the output as textar and print a subitem from it, use it for verify html output
 - edmain: add a -watch flag to run `go run ...` automatically on fs change
-- webdiff: make the table width consistent
+- webdiff: use gray for the placeholder cells; e.g. pure addition's other side should be gray
+- webdiff: bold the actual diff within a change block
 - webdiff: add line numbers
 - webdiff: make it possible to switch to unified diff
 - webdiff: save the settings to localstorage or to a cookie
 - webdiff: add expand button for the collapsed sections
+- webdiff: make the selection work correctly
 - fmtdiff: add SetHunkHeaderRE(re string) error and SetHunkHeaderREs(keyglob, re ...string) error (default could be ^\S)
 - examples: add a markdown example too
 - flag: add -template=key flag for choosing a "template" to use on lhs side for new rhs keys instead of the empty value

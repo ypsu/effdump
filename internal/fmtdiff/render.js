@@ -4,8 +4,7 @@ function main() {
   let h = ''
   for (let name in diffs) {
     h += `<p>${name}</p>`
-    let hlt = ''
-    let hrt = ''
+    h += `<table>\n`
     let x = diffs[name].lt
     let y = diffs[name].rt
     let xi = 0
@@ -14,26 +13,21 @@ function main() {
       let del = diffs[name].ops[i]
       let add = diffs[name].ops[i + 1]
       let keep = diffs[name].ops[i + 2]
-      if (del > 0) {
-        hlt += '<div class=cbgNegative>'
-        for (let i = 0; i < del; i++) hlt += lines[x[xi++]]
-        hlt += '</div>'
+      if (del > 0 || add > 0) {
+        h += `<td class="cSide cbgNegative">`
+        for (let ex = xi+del; xi < ex; xi++) h += lines[x[xi]]
+        h += `<td class="cSide cbgPositive">`
+        for (let ey = yi+add; yi < ey; yi++) h += lines[y[yi]]
       }
-      for (let i = del; i < add; i++) hlt += '\n'
-      if (add > 0) {
-        hrt += '<div class=cbgPositive>'
-        for (let i = 0; i < add; i++) hrt += lines[y[yi++]]
-        hrt += '</div>'
+      h += '<tr>\n'
+      if (keep > 0) {
+        h += `<td class=cSide>`
+        for (let ex = xi+keep; xi < ex; xi++) h += lines[x[xi]]
+        h += `<td class=cSide>`
+        for (let ey = yi+keep; yi < ey; yi++) h += lines[y[yi]]
       }
-      for (let i = add; i < del; i++) hrt += '\n'
-      while (keep-- > 0) {
-        hlt += lines[x[xi++]]
-        hrt += lines[y[yi++]]
-      }
+      h += '<tr>\n'
     }
-    h += `<table>\n`
-    h += `  <td><pre>${hlt}</pre>`
-    h += `  <td><pre>${hrt}</pre>`
     h += `</table>`
     h += `<hr>`
   }
