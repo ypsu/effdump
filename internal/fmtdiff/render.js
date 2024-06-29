@@ -14,17 +14,37 @@ function main() {
       let add = diffs[name].ops[i + 1]
       let keep = diffs[name].ops[i + 2]
       if (del > 0 || add > 0) {
-        h += `<td class="cSide cbgNegative">`
-        for (let ex = xi+del; xi < ex; xi++) h += lines[x[xi]]
-        h += `<td class="cSide cbgPositive">`
-        for (let ey = yi+add; yi < ey; yi++) h += lines[y[yi]]
+        let common = Math.min(add, del)
+        if (common > 0) {
+          h += `<td class="cSide cbgNegative">`
+          for (let ex = xi + common; xi < ex; xi++) h += lines[x[xi]]
+          h += `<td class="cSide cbgPositive">`
+          for (let ey = yi + common; yi < ey; yi++) h += lines[y[yi]]
+          h += '<tr>\n'
+        }
+        if (del > common || add > common) {
+          if (del == common) {
+            h += `<td class="cSide cbgNeutral">`
+            for (let i = del - common; i > 0; i--) h += '\n'
+          } else {
+            h += `<td class="cSide cbgNegative">`
+            for (let ex = xi + del - common; xi < ex; xi++) h += lines[x[xi]]
+          }
+          if (add == common) {
+            h += `<td class="cSide cbgNeutral">`
+            for (let i = add - common; i > 0; i--) h += '\n'
+          } else {
+            h += `<td class="cSide cbgPositive">`
+            for (let ey = yi + add - common; yi < ey; yi++) h += lines[y[yi]]
+          }
+          h += '<tr>\n'
+        }
       }
-      h += '<tr>\n'
       if (keep > 0) {
         h += `<td class=cSide>`
-        for (let ex = xi+keep; xi < ex; xi++) h += lines[x[xi]]
+        for (let ex = xi + keep; xi < ex; xi++) h += lines[x[xi]]
         h += `<td class=cSide>`
-        for (let ey = yi+keep; yi < ey; yi++) h += lines[y[yi]]
+        for (let ey = yi + keep; yi < ey; yi++) h += lines[y[yi]]
       }
       h += '<tr>\n'
     }
