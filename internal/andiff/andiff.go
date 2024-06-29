@@ -64,19 +64,43 @@ func Compute(lt, rt string) Diff {
 		}
 
 		// m[0] is now the next matching unique line.
-		// Find the next matching line, not necessary unique.
+		// Find the highest matching line above it, not necessary unique.
 		// And then find the next differing line too.
-		nxi, nyi := ms[0].x, ms[0].y
+		nxi, nyi, dxi, dyi := ms[0].x, ms[0].y, ms[0].x, ms[0].y
 		for nxi > xi && nyi > yi && x[nxi-1] == y[nyi-1] {
 			nxi, nyi = nxi-1, nyi-1
 		}
-		dxi, dyi := nxi, nyi
 		for dxi < len(x) && dyi < len(y) && x[dxi] == y[dyi] {
 			dxi, dyi = dxi+1, dyi+1
 		}
 
-		// todo: try sliding the diff down pure rm or pure add and find the best slide.
-		// best slide is the bottomest line with the min indentation while ignoring empty and whitspace only lines.
+		// Try sliding the pure additions and pure removals up to find the best slide.
+		// Best slide is the bottomest line with the min indentation while ignoring empty and whitspace only lines.
+		// This is for handling the " [\n   a\n ]\n+[\n+  b\n+]\n [\n   c\n ]\n" case.
+		var bestindent, bestslide, maxslide int
+		if len(ops) > 0 {
+			maxslide = ops[len(ops)-1].Keep
+		}
+		if nyi-yi == 0 { // pure deletion
+			bestindent = countIndent(x[xi])
+			for slide := 1; slide < maxslide && x[nxi-slide] == x[xi-slide]; slide++ {
+				if indent := countIndent(x[xi-slide]); indent < bestindent {
+					bestindent, bestslide = indent, slide
+				}
+			}
+		}
+		if nxi-xi == 0 { // pure addition
+			bestindent = countIndent(y[yi])
+			for slide := 1; slide < maxslide && y[nyi-slide] == y[yi-slide]; slide++ {
+				if indent := countIndent(y[yi-slide]); indent < bestindent {
+					bestindent, bestslide = indent, slide
+				}
+			}
+		}
+		if s := bestslide; s > 0 {
+			ops[len(ops)-1].Keep -= s
+			xi, yi, nxi, nyi, dxi, dyi = xi-s, yi-s, nxi-s, nyi-s, dxi-s, dyi-s
+		}
 
 		// todo: try splitting the diff via looking for equal lines starting from the top.
 		// not a perfect heuristic but should make the diff better in a lot of common cases.
@@ -90,6 +114,17 @@ func Compute(lt, rt string) Diff {
 		ops = append(ops, Op{len(x) - xi, len(y) - yi, 0})
 	}
 	return Diff{x, y, ops}
+}
+
+func countIndent(s string) int {
+	if strings.TrimSpace(s) == "" {
+		return 1 << 30
+	}
+	indent := 0
+	for strings.HasPrefix(s, " ") || strings.HasPrefix(s, "\t") {
+		s, indent = s[1:], indent+1
+	}
+	return indent
 }
 
 // tgs returns the pairs of indexes of the longest common subsequence
