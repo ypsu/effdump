@@ -4,6 +4,7 @@
 package andiff
 
 import (
+	"hash/fnv"
 	"sort"
 	"strings"
 )
@@ -19,6 +20,8 @@ type Diff struct {
 	LT, RT []string
 
 	Ops []Op
+
+	Hash uint64
 }
 
 // A pair is a pair of values tracked for both the x and y side of a diff.
@@ -38,8 +41,9 @@ func split(s string) []string {
 func Compute(lt, rt string) Diff {
 	x, y := split(lt), split(rt)
 	if lt == rt {
-		return Diff{x, y, []Op{{0, 0, len(x)}}}
+		return Diff{x, y, []Op{{0, 0, len(x)}}, 0}
 	}
+	h := fnv.New64()
 
 	var (
 		ms     = tgs(x, y)        // matched lines
@@ -114,15 +118,31 @@ func Compute(lt, rt string) Diff {
 			}
 		}
 
+		for i := xi; i < nxi; i++ {
+			h.Write([]byte("\n-"))
+			h.Write([]byte(x[i]))
+		}
+		for i := yi; i < nyi; i++ {
+			h.Write([]byte("\n+"))
+			h.Write([]byte(y[i]))
+		}
 		ops = append(ops, Op{nxi - xi, nyi - yi, dxi - nxi})
 		xi, yi = dxi, dyi
 	}
 
 	// add the final operation block if needed.
 	if xi < len(x) || yi < len(y) {
+		for i := xi; i < len(x); i++ {
+			h.Write([]byte("\n-"))
+			h.Write([]byte(x[i]))
+		}
+		for i := yi; i < len(y); i++ {
+			h.Write([]byte("\n+"))
+			h.Write([]byte(y[i]))
+		}
 		ops = append(ops, Op{len(x) - xi, len(y) - yi, 0})
 	}
-	return Diff{x, y, ops}
+	return Diff{x, y, ops, h.Sum64()}
 }
 
 func countIndent(s string) int {

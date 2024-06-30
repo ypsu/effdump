@@ -1,4 +1,5 @@
 - edmain: implement bucketing
+- edmain: implement regex transformation
 - edmain: add a htmlprint, webprint subcommand
 - edmain: allow specifying baseline via -version=...; also diff against the most recent effdump?
 - edmain: add -subitem flag for printraw to parse the output as textar and print a subitem from it, use it for verify html output

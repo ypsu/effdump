@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/ypsu/effdump/internal/andiff"
+	"github.com/ypsu/effdump/internal/edbg"
 	"github.com/ypsu/effdump/internal/keyvalue"
 	"github.com/ypsu/effdump/internal/textar"
 )
@@ -29,6 +30,7 @@ func (uf *UnifiedFormatter) Add(name string, d andiff.Diff) {
 		difftext = "\t" + strings.ReplaceAll(difftext, "\n", "\n\t")
 	}
 	uf.kvs = append(uf.kvs, keyvalue.KV{name, difftext})
+	edbg.Printf("%016x = hash(%q)\n", d.Hash, name)
 }
 
 // WriteTo writes the resulting textar to w.
