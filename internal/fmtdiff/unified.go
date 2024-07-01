@@ -3,44 +3,29 @@ package fmtdiff
 
 import (
 	"fmt"
-	"io"
 	"strings"
 
 	"github.com/ypsu/effdump/internal/andiff"
-	"github.com/ypsu/effdump/internal/edbg"
 	"github.com/ypsu/effdump/internal/keyvalue"
 	"github.com/ypsu/effdump/internal/textar"
 )
 
-// UnifiedFormatter collects unified-formatted diffs into a textar.
-type UnifiedFormatter struct {
-	kvs     []keyvalue.KV
-	sepchar byte
-}
-
-// NewUnifiedFormatter creates a new UnifiedFormatter.
-func NewUnifiedFormatter(sepchar byte) *UnifiedFormatter {
-	return &UnifiedFormatter{sepchar: sepchar}
-}
-
-// Add Adds a diff's unified representation to the result.
-func (uf *UnifiedFormatter) Add(name string, d andiff.Diff) {
-	difftext := Unified(d)
-	if difftext != "" {
-		difftext = "\t" + strings.ReplaceAll(difftext, "\n", "\n\t")
+// UnifiedBuckets formats a list of diff buckets into a textar.
+func UnifiedBuckets(buckets []Bucket, sepch byte) string {
+	var kvs []keyvalue.KV
+	for bucketid, bucket := range buckets {
+		for _, e := range bucket.Entries {
+			title, diff := fmt.Sprintf("%s (%s, bucket %d)", e.Name, e.Comment, bucketid+1), Unified(e.Diff)
+			if diff != "" {
+				diff = "\t" + strings.ReplaceAll(diff, "\n", "\n\t")
+			}
+			kvs = append(kvs, keyvalue.KV{title, diff})
+		}
 	}
-	uf.kvs = append(uf.kvs, keyvalue.KV{name, difftext})
-	edbg.Printf("%016x = hash(%q)\n", d.Hash, name)
+	return textar.Format(kvs, sepch) + "\n"
 }
 
-// WriteTo writes the resulting textar to w.
-func (uf *UnifiedFormatter) WriteTo(w io.Writer) (int, error) {
-	n, err := io.WriteString(w, textar.Format(uf.kvs, uf.sepchar))
-	w.Write([]byte("\n"))
-	return n + 1, err
-}
-
-// Unified prints unified diff, suitable for terminal output.
+// Unified returns unified diff, suitable for terminal output.
 func Unified(d andiff.Diff) string {
 	ctx := 3
 	w := &strings.Builder{}
