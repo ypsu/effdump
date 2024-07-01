@@ -1,4 +1,4 @@
-// Package andiff implements the anchored diff algorithm.
+// Package andiff implements the O(nlogn) anchored diff algorithm.
 // Shamefully stolen from Go's src/internal/diff/diff.go.
 // Heavily modified to better match effdump's needs.
 package andiff
@@ -130,7 +130,7 @@ func Compute(lt, rt string) Diff {
 		xi, yi = dxi, dyi
 	}
 
-	// add the final operation block if needed.
+	// Add the final operation block if needed.
 	if xi < len(x) || yi < len(y) {
 		for i := xi; i < len(x); i++ {
 			h.Write([]byte("\n-"))
