@@ -14,12 +14,19 @@ import (
 func UnifiedBuckets(buckets []Bucket, sepch byte) string {
 	var kvs []keyvalue.KV
 	for bucketid, bucket := range buckets {
-		for _, e := range bucket.Entries {
-			title, diff := fmt.Sprintf("%s (%s, bucket %d)", e.Name, e.Comment, bucketid+1), Unified(e.Diff)
-			if diff != "" {
-				diff = "\t" + strings.ReplaceAll(diff, "\n", "\n\t")
+		e := bucket.Entries[0]
+		title, diff := fmt.Sprintf("%s (%s, bucket %d)", e.Name, e.Comment, bucketid+1), Unified(e.Diff)
+		if diff != "" {
+			diff = "\t" + strings.ReplaceAll(diff, "\n", "\n\t")
+		}
+		kvs = append(kvs, keyvalue.KV{title, diff})
+		if len(bucket.Entries[1:]) > 0 {
+			title := fmt.Sprintf("(omitted similar diffs in bucket %d)", bucketid+1)
+			keys := make([]string, len(bucket.Entries[1:]))
+			for i, e := range bucket.Entries[1:] {
+				keys[i] = e.Name
 			}
-			kvs = append(kvs, keyvalue.KV{title, diff})
+			kvs = append(kvs, keyvalue.KV{title, "\t" + strings.Join(keys, "\n\t") + "\n"})
 		}
 	}
 	return textar.Format(kvs, sepch) + "\n"
