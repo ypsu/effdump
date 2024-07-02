@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -215,8 +216,8 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("nonexistent-baseline", "Diffing against a baseline that doesn't exist.")
 	fetchVersion = "nonexistent"
 	run("diff")
-	setdesc("bad-baseline", "Diffing against a baseline that can't be parsed.")
 	{
+		setdesc("bad-baseline", "Diffing against a baseline that can't be parsed.")
 		badkvs := append(slices.Clone(numsbase), keyvalue.KV{"aaa", "somevalue"})
 		gz, err := edmain.Compress(badkvs, '=', edmain.Hash(badkvs))
 		if err != nil {
@@ -233,6 +234,26 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = slices.Clone(numsbase)
 	p.Effects[1].V += "10\n"
 	run()
+	{
+		setdesc("large", "Diffing large number of similar diffs.")
+		n, content := 20, "1\n2\n3\n4\n5\n6\n7\n8\n"
+		seqkvs := make([]keyvalue.KV, 0, n)
+		for i := 0; i < n; i++ {
+			seqkvs = append(seqkvs, keyvalue.KV{strconv.Itoa(i + 10), content})
+		}
+		gz, err := edmain.Compress(seqkvs, '=', edmain.Hash(seqkvs))
+		if err != nil {
+			return nil, fmt.Errorf("effdumptest/compress seqkvs: %v", err)
+		}
+		if err := os.WriteFile(filepath.Join(tmpdir, "seqkvs.gz"), gz, 0o644); err != nil {
+			return nil, fmt.Errorf("effdumptest/write seqkvs.gz: %v", err)
+		}
+		for i := range seqkvs {
+			seqkvs[i].V += "9\n"
+		}
+		fetchVersion, p.Effects = "seqkvs", seqkvs
+		run("diff")
+	}
 
 	group = "cmd-htmldiff"
 	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
