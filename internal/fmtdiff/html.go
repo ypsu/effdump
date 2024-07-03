@@ -52,9 +52,9 @@ func HTMLBuckets(buckets []Bucket) string {
 
 	printf("let diffbuckets = [\n")
 	for _, bucket := range buckets {
-		printf("  {\n")
+		printf("  [\n")
 		for _, entry := range bucket.Entries {
-			printf("    '%s': {\n    lt: [", entry.Name)
+			printf("    {\n    name: '%s',\n    lt: [", html.EscapeString(entry.Name))
 			for _, line := range entry.Diff.LT {
 				printf("%d,", linesidx[line])
 			}
@@ -68,7 +68,7 @@ func HTMLBuckets(buckets []Bucket) string {
 			}
 			printf("],\n    },\n")
 		}
-		printf("  },\n")
+		printf("  ],\n")
 	}
 	printf("]\n")
 

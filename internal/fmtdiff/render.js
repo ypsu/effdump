@@ -3,10 +3,11 @@
 function main() {
   let h = ''
   for (let bucketid = 0; bucketid < diffbuckets.length; bucketid++) {
-    h += `<h2>bucket <a id=b${bucketid+1} href="#b${bucketid+1}">#${bucketid+1}</a></h2>\n`
-    for (let name in diffbuckets[bucketid]) {
-      let diff = diffbuckets[bucketid][name]
-      h += `<p>${name}</p>`
+    h += `<p>bucket <a id=b${bucketid+1} href="#b${bucketid+1}">#${bucketid+1}</a>: ${diffbuckets[bucketid].length} diffs</p>\n`
+    h += `<ul>`
+    for (let i in diffbuckets[bucketid]) {
+      let diff = diffbuckets[bucketid][i]
+      h += `<li><details${i==0?" open":""}><summary>${diff.name}</summary>`
       h += `<table>\n`
       let x = diff.lt
       let y = diff.rt
@@ -51,9 +52,9 @@ function main() {
         }
         h += '<tr>\n'
       }
-      h += `</table>`
+      h += `</table></details>`
     }
-    h += `<hr>`
+    h += `</ul><hr>`
   }
 
   h_UI.innerHTML = h
