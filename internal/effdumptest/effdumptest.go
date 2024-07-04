@@ -204,6 +204,8 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("glob-arg", "printraw expects one argument exactly. Doesn't take globs.")
 	run("printraw", "ev*")
 
+	var seqkvs []keyvalue.KV
+
 	group = "cmd-diff"
 	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
 	run("diff")
@@ -264,6 +266,9 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'ht'.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("htmldiff", "ht*")
+	setdesc("large", "Diffing large number of similar diffs.")
+	fetchVersion, p.Effects = "seqkvs", seqkvs
+	run("htmldiff")
 
 	group = "cmd-hash"
 	setdesc("no-args", "Print the hash of the nums effdump.")
