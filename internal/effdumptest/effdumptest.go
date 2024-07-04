@@ -239,7 +239,6 @@ func mkdump() (*effdump.Dump, error) {
 	{
 		setdesc("large", "Diffing large number of similar diffs.")
 		n, content := 20, "1\n2\n3\n4\n5\n6\n7\n8\n"
-		seqkvs := make([]keyvalue.KV, 0, n)
 		for i := 0; i < n; i++ {
 			seqkvs = append(seqkvs, keyvalue.KV{strconv.Itoa(i + 10), content})
 		}
