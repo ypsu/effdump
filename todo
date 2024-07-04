@@ -1,4 +1,3 @@
-- edmain: implement bucketing
 - edmain: implement regex transformation
 - edmain: add a htmlprint, webprint subcommand
 - edmain: allow specifying baseline via -version=...; also diff against the most recent effdump?
