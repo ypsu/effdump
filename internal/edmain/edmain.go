@@ -55,7 +55,13 @@ type Params struct {
 func (p *Params) Usage() {
 	p.Stdout.Write([]byte(`effdump: generate and diff an effect dump.
 
-Subcommands:
+Most important subcommands to know about:
+
+- diff: Print an unified diff between HEAD dump and the current version. Takes a list of key globs for filtering.
+- save: Save the current version of the dump to the temp dir.
+- webdiff: Serve the HTML formatted diff between HEAD dump and the current version.
+
+All subcommands:
 
 - clear: Delete this effdump's cache: all previously stored dumps and html reports in its temp dir.
 - diff: Print an unified diff between HEAD dump and the current version. Takes a list of key globs for filtering.
