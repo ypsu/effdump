@@ -67,6 +67,7 @@ Subcommands:
 - printraw: Print one effect to stdout without any decoration. Needs one argument for the key.
 - save: Save the current version of the dump to the temp dir.
 - webdiff: Serve the HTML formatted diff between HEAD dump and the current version.
+- webprintraw: Same as printraw but serves it over HTTP.
 
 Key globs: * is replaced with arbitrary number of characters. "hello" matches the glob "*o*".
 
@@ -358,18 +359,32 @@ func (p *Params) Run(ctx context.Context) error {
 			return nil
 		}
 		html := fmtdiff.HTMLBuckets(buckets)
-		t, content := time.Now(), strings.NewReader(html)
-		handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-			http.ServeContent(w, req, "diff.html", t, content)
-		})
-		fmt.Fprintf(os.Stderr, "Serving HTML diff on %s.\n", p.Address)
-		if err := http.ListenAndServe(p.Address, handler); err != nil {
-			return fmt.Errorf("edmain/ListenAndServe: %v", err)
+		return p.serve(html)
+	case "webprintraw":
+		if len(args) != 1 {
+			return fmt.Errorf("edmain/printraw: got %d args, want 1", len(args))
 		}
-		return nil
+		for _, e := range p.Effects {
+			if e.K == args[0] {
+				return p.serve(e.V)
+			}
+		}
+		return fmt.Errorf("edmain/printraw: key %q not found", args[0])
 	default:
 		return fmt.Errorf("edmain/run subcommand: subcommand %q not found", subcommand)
 	}
+}
+
+func (p *Params) serve(s string) error {
+	t, content := time.Now(), strings.NewReader(s)
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		http.ServeContent(w, req, "", t, content)
+	})
+	fmt.Fprintf(os.Stderr, "Serving HTTP on %s.\n", p.Address)
+	if err := http.ListenAndServe(p.Address, handler); err != nil {
+		return fmt.Errorf("edmain/ListenAndServe: %v", err)
+	}
+	return nil
 }
 
 // MakeRE makes a single regex from a set of globs.
