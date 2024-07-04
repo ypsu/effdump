@@ -72,6 +72,6 @@ func HTMLBuckets(buckets []Bucket) string {
 	}
 	printf("]\n")
 
-	printf("\nmain()\n</script>\n</body>\n</html>")
+	printf("\nmain()\n</script>\n</body>\n</html>\n")
 	return w.String()
 }
