@@ -3,9 +3,13 @@
 function main() {
   let h = ''
   for (let bucketid = 0; bucketid < diffbuckets.length; bucketid++) {
+    let many = diffbuckets[bucketid].length >= 10
     h += `<p>bucket <a id=b${bucketid+1} href="#b${bucketid+1}">#${bucketid+1}</a>: ${diffbuckets[bucketid].length} diffs</p>\n`
     h += `<ul>`
     for (let i in diffbuckets[bucketid]) {
+      if (many && i == 7) {
+        h += `<li><details><summary>... (additional ${diffbuckets[bucketid].length-i} similar diffs)</summary>`
+      }
       let diff = diffbuckets[bucketid][i]
       h += `<li><details${i==0?" open":""}><summary>${diff.name}</summary>`
       h += `<table>\n`
@@ -54,6 +58,7 @@ function main() {
       }
       h += `</table></details>`
     }
+    if (many) h += '</details>'
     h += `</ul><hr>`
   }
 
