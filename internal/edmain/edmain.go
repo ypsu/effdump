@@ -42,6 +42,7 @@ type Params struct {
 	Force      bool
 	OutputFile string
 	Sepch      string
+	Subkey     string
 
 	// Internal helper vars.
 	tmpdir  string         // the dir for storing this effdump's versions
@@ -84,6 +85,9 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
 	fs.StringVar(&p.OutputFile, "o", "", "Override the output file for htmldiff and htmlprint. Use - to write to stdout.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
+	fs.StringVar(&p.Subkey, "subkey", "",
+		"Parse each value as a textar, pick subkey's value, and then operate on that section only.\n"+
+			"Especially useful for printraw to print a portion of the result.")
 }
 
 func isIdentifier(v string) bool {
@@ -149,6 +153,7 @@ func (p *Params) diff() ([]fmtdiff.Bucket, error) {
 		}
 	}
 	lt = slices.DeleteFunc(lt, func(kv keyvalue.KV) bool { return !p.filter.MatchString(kv.K) })
+	p.subkeyize(lt)
 	rt := p.Effects
 
 	n, e, buckets, hash2idx := 0, fmtdiff.Entry{}, []fmtdiff.Bucket{}, map[uint64]int{}
@@ -175,6 +180,22 @@ func (p *Params) diff() ([]fmtdiff.Bucket, error) {
 	}
 	slices.SortFunc(buckets, func(a, b fmtdiff.Bucket) int { return cmp.Compare(a.Entries[0].Name, b.Entries[0].Name) })
 	return buckets, nil
+}
+
+func (p *Params) subkeyize(kvs []keyvalue.KV) {
+	if p.Subkey == "" {
+		return
+	}
+	subkvs := make([]keyvalue.KV, 0, 4)
+	for i, e := range kvs {
+		subkvs, p.Effects[i].V = textar.Parse(subkvs, e.V), ""
+		for _, kv := range subkvs {
+			if kv.K == p.Subkey {
+				kvs[i].V = kv.V
+				break
+			}
+		}
+	}
 }
 
 // Run runs effdump's main CLI logic.
@@ -235,6 +256,7 @@ func (p *Params) Run(ctx context.Context) error {
 			return fmt.Errorf("edmain/unique check: key %q duplicated", p.Effects[i].K)
 		}
 	}
+	p.subkeyize(p.Effects)
 
 	switch subcommand {
 	case "clear":
