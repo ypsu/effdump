@@ -1,4 +1,5 @@
 - test: add the diff testcases for the html renderer
+- webdiff: implement render in go
 - webdiff: add expand button for the collapsed sections
 - edmain: implement regex transformation
 - edmain: add a htmlprint, webprint subcommand
