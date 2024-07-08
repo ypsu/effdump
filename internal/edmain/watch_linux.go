@@ -5,14 +5,27 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
+	"log"
 	"os"
 	"os/exec"
 	"os/signal"
+	"path/filepath"
 	"runtime/debug"
 	"strconv"
 	"syscall"
 	"time"
+	"unsafe"
 )
+
+// termsize() returns stderr's terminal size.
+// Returns 0, 0 on error.
+func termsize() (width, height int) {
+	// Per https://stackoverflow.com/questions/1733155/how-do-you-get-the-terminal-size-in-go.
+	var winsz [4]int16
+	syscall.Syscall(syscall.SYS_IOCTL, uintptr(os.Stderr.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&winsz)))
+	return int(winsz[1]), int(winsz[0])
+}
 
 // fittedPrint prints the top of s to terminal such that it fits the terminal's current size.
 // It trims excess lines and excess width.
@@ -108,6 +121,75 @@ func startcmd(argv []string, env []string) (output []byte, kill func()) {
 	}
 }
 
+// reportchanges reports file modifications from under the current directory.
+// Sends a true on the channel whenever it detects some fs events.
+func reportchanges(changed chan<- bool) {
+	watches := map[int]string{}
+	ifd, err := syscall.InotifyInit()
+	if err != nil {
+		log.Fatalf("InotifyInit: %v.", err)
+	}
+
+	var watchpath func(string)
+	watchpath = func(p string) {
+		mask := uint32(0) |
+			syscall.IN_CLOSE_WRITE |
+			syscall.IN_CREATE |
+			syscall.IN_DELETE |
+			syscall.IN_MOVED_FROM |
+			syscall.IN_MOVED_TO |
+			syscall.IN_DONT_FOLLOW |
+			syscall.IN_EXCL_UNLINK |
+			syscall.IN_ONLYDIR
+		wd, err := syscall.InotifyAddWatch(ifd, p, mask)
+		if err != nil {
+			log.Fatalf("InotifyAddWatch(%q): %v.", p, err)
+		}
+		watches[wd] = p
+		filepath.WalkDir(p, func(childpath string, d fs.DirEntry, err error) error {
+			if err != nil || !d.IsDir() || childpath == p {
+				return nil
+			}
+			watchpath(childpath)
+			return fs.SkipDir
+		})
+	}
+	watchpath(".")
+
+	for {
+		const bufsize = 16384
+		eventbuf := [bufsize]byte{}
+		n, err := syscall.Read(ifd, eventbuf[:])
+		if n <= 0 || err != nil {
+			log.Fatalf("Read inotify fd: %v.", err)
+		}
+		for offset := 0; offset < n; {
+			if n-offset < syscall.SizeofInotifyEvent {
+				log.Fatalf("Invalid inotify read.")
+			}
+			event := (*syscall.InotifyEvent)(unsafe.Pointer(&eventbuf[offset]))
+			wd, mask, namelen := int(event.Wd), int(event.Mask), int(event.Len)
+			namebytes := (*[syscall.PathMax]byte)(unsafe.Pointer(&eventbuf[offset+syscall.SizeofInotifyEvent]))
+			name := string(bytes.TrimRight(namebytes[:namelen], "\000"))
+			dir, watchExists := watches[wd]
+			if !watchExists {
+				log.Fatalf("Unknown watch descriptor %d.", wd)
+			}
+			fullname := filepath.Join(dir, name)
+			if mask&syscall.IN_IGNORED != 0 {
+				delete(watches, wd)
+			}
+			if mask&syscall.IN_CREATE != 0 || mask&syscall.IN_MOVED_TO != 0 {
+				if fi, err := os.Stat(fullname); err == nil && fi.IsDir() { // on success and if fullname is dir
+					watchpath(fullname)
+				}
+			}
+			offset += syscall.SizeofInotifyEvent + namelen
+		}
+		changed <- true
+	}
+}
+
 // watch runs the current command repeatedly after each filesystem change (with -watch flag removed).
 func (p *Params) watch(ctx context.Context) error {
 	bi, ok := debug.ReadBuildInfo()
@@ -125,12 +207,20 @@ func (p *Params) watch(ctx context.Context) error {
 	sigch := make(chan os.Signal, 1)
 	signal.Notify(sigch, syscall.SIGINT)
 
+	fsch := make(chan bool, 64)
+	go reportchanges(fsch)
+
 	for ctx.Err() == nil {
 		fmt.Fprintf(os.Stderr, "running...")
 		output, kill := startcmd(argv, env)
 		fittedPrint(output)
 		select {
-		case <-time.After(5 * time.Second):
+		case <-fsch:
+			// Wait a little bit to settle and then drain fsch.
+			time.Sleep(100 * time.Millisecond)
+			for len(fsch) > 0 {
+				<-fsch
+			}
 			kill()
 		case <-sigch:
 			kill()

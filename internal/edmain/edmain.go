@@ -100,7 +100,7 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.Subkey, "subkey", "",
 		"Parse each value as a textar, pick subkey's value, and then operate on that section only.\n"+
 			"Especially useful for printraw to print a portion of the result.")
-	fs.BoolVar(&p.Watch, "watch", false, "If set then continuously re-run the command on any file change under the project's directory. Linux only.")
+	fs.BoolVar(&p.Watch, "watch", false, "If set then continuously re-run the command on any file change under the current directory. Linux only.")
 }
 
 func isIdentifier(v string) bool {
