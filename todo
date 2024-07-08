@@ -7,9 +7,12 @@
 - webdiff: add line numbers
 - webdiff: make it possible to switch to unified diff
 - webdiff: save the settings to localstorage or to a cookie
+- webdiff: implement collapsing
 - webdiff: add expand button for the collapsed sections
 - webdiff: make the selection work correctly
-- webdiff: implement bolding the middle part for del:1 add:1 type of changes if more than 50% (strictly) is the same of the line
 - fmtdiff: add SetHunkHeaderRE(re string) error and SetHunkHeaderREs(keyglob, re ...string) error (default could be ^\S)
+- edmain: add a README to the tmpdir similar to /tmp/cache/go-build/README
+- edmain: add auto-trimming: if lasttrim is older than a day, delete dumps older than 8 days and touch lasttrim
+- unidiff: colorize output; -color is by default true iff os.Stdout is terminal or -watcherPID is set
 - examples: add a markdown example too
 - flag: add -template=key flag for choosing a "template" to use on lhs side for new rhs keys instead of the empty value

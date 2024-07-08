@@ -10,6 +10,7 @@ import (
 	"hash/fnv"
 	"io"
 	"math/rand"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -39,16 +40,19 @@ type Params struct {
 
 	// Flags. Must be parsed by the caller after RegisterFlags.
 	Address    string
+	Color      string
 	Force      bool
 	OutputFile string
 	Sepch      string
 	Subkey     string
+	Watch      bool
 
 	// Internal helper vars.
-	tmpdir  string         // the dir for storing this effdump's versions
-	version string         // the baseline version of the source
-	clean   bool           // whether the working dir is clean
-	filter  *regexp.Regexp // the entries to print or diff
+	tmpdir     string         // the dir for storing this effdump's versions
+	version    string         // the baseline version of the source
+	clean      bool           // whether the working dir is clean
+	filter     *regexp.Regexp // the entries to print or diff
+	watcherpid string         // parent -watch process PID, if one is running
 }
 
 // Usage prints a help message to p.Stdout.
@@ -89,12 +93,14 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	p.Flagset = fs
 	fs.Usage = p.Usage
 	fs.StringVar(&p.Address, "address", ":8080", "The address to serve webdiff on.")
+	fs.StringVar(&p.Color, "color", "auto", "Whether to colorize the output. Valid values: auto|yes|no.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
 	fs.StringVar(&p.OutputFile, "o", "", "Override the output file for htmldiff and htmlprint. Use - to write to stdout.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 	fs.StringVar(&p.Subkey, "subkey", "",
 		"Parse each value as a textar, pick subkey's value, and then operate on that section only.\n"+
 			"Especially useful for printraw to print a portion of the result.")
+	fs.BoolVar(&p.Watch, "watch", false, "If set then continuously re-run the command on any file change under the project's directory. Linux only.")
 }
 
 func isIdentifier(v string) bool {
@@ -219,6 +225,9 @@ func (p *Params) Run(ctx context.Context) error {
 		if dir, ok := strings.CutPrefix(e, "EFFDUMP_DIR="); ok {
 			p.tmpdir = dir
 		}
+		if pid, ok := strings.CutPrefix(e, "EFFDUMP_WATCHERPID="); ok {
+			p.watcherpid = pid
+		}
 	}
 	p.version, p.clean, err = p.FetchVersion(ctx)
 	if err != nil {
@@ -264,6 +273,10 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 	}
 	p.subkeyize(p.Effects)
+
+	if p.Watch && p.watcherpid == "" {
+		return p.watch(ctx)
+	}
 
 	switch subcommand {
 	case "clear":
@@ -365,14 +378,14 @@ func (p *Params) Run(ctx context.Context) error {
 			return nil
 		}
 		html := fmtdiff.HTMLBuckets(buckets)
-		return p.serve(html)
+		return p.serve(ctx, html)
 	case "webprintraw":
 		if len(args) != 1 {
 			return fmt.Errorf("edmain/printraw: got %d args, want 1", len(args))
 		}
 		for _, e := range p.Effects {
 			if e.K == args[0] {
-				return p.serve(e.V)
+				return p.serve(ctx, e.V)
 			}
 		}
 		return fmt.Errorf("edmain/printraw: key %q not found", args[0])
@@ -381,16 +394,18 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 }
 
-func (p *Params) serve(s string) error {
+func (p *Params) serve(_ context.Context, s string) error {
 	t, content := time.Now(), strings.NewReader(s)
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.ServeContent(w, req, "", t, content)
 	})
-	fmt.Fprintf(os.Stderr, "Serving HTTP on %s.\n", p.Address)
-	if err := http.ListenAndServe(p.Address, handler); err != nil {
-		return fmt.Errorf("edmain/ListenAndServe: %v", err)
+	listener, err := net.Listen("tcp", p.Address)
+	if err != nil {
+		return fmt.Errorf("edmain/listen on %s: %v", p.Address, err)
 	}
-	return nil
+	fmt.Fprintf(os.Stderr, "Serving HTTP on %s.\n", p.Address)
+	p.notifyWatcher() // Tell watcher (if any) that the output is ready.
+	return http.Serve(listener, handler)
 }
 
 // MakeRE makes a single regex from a set of globs.
