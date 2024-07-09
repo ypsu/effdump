@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"fmt"
 	"html"
-	"slices"
 	"strconv"
 	"strings"
 
@@ -14,8 +13,12 @@ import (
 //go:embed header.html
 var htmlHeader []byte
 
-//go:embed render.js
-var renderJS []byte
+func cond[T any](c bool, ontrue, onfalse T) T {
+	if c {
+		return ontrue
+	}
+	return onfalse
+}
 
 // HTMLBuckets formats a list of diff buckets into a HTML document.
 func HTMLBuckets(buckets []Bucket) string {
@@ -23,55 +26,73 @@ func HTMLBuckets(buckets []Bucket) string {
 	w.Grow(1 << 20)
 	printf := func(format string, args ...any) { fmt.Fprintf(w, format, args...) }
 
-	linesidx := make(map[string]int, 1024)
+	// Compute the width of the columns.
+	width := 40
 	for _, bucket := range buckets {
 		for _, e := range bucket.Entries {
 			for _, line := range e.Diff.LT {
-				linesidx[line] = 0
+				width = max(width, len(line))
 			}
 			for _, line := range e.Diff.RT {
-				linesidx[line] = 0
+				width = max(width, len(line))
 			}
 		}
-	}
-	width, lines := 40, make([]string, 0, len(linesidx))
-	for line := range linesidx {
-		width, lines = max(width, len(line)), append(lines, line)
 	}
 	width = min(120, width)
 
+	// Render the header.
 	printf("%s\n", bytes.ReplaceAll(htmlHeader, []byte("${WIDTH}"), []byte(strconv.Itoa(width+2))))
-	printf("%s\n", renderJS)
-	slices.Sort(lines)
-	printf("let lines = [\n")
-	for i, line := range lines {
-		linesidx[line] = i
-		printf("'%s\\n',\n", strings.ReplaceAll(html.EscapeString(line), "\\", "&#92;"))
-	}
-	printf("]\n")
 
-	printf("let diffbuckets = [\n")
-	for _, bucket := range buckets {
-		printf("  [\n")
-		for _, entry := range bucket.Entries {
-			printf("    {\n    name: '%s',\n    lt: [", html.EscapeString(entry.Name))
-			for _, line := range entry.Diff.LT {
-				printf("%d,", linesidx[line])
+	// Render the diff table.
+	for bucketid, bucket := range buckets {
+		summarized := len(bucket.Entries) >= 10
+		printf("<p>bucket <a id=b%d href='#b%d'>#%d</a>: %d diffs</p>\n", bucketid+1, bucketid+1, bucketid+1, len(bucket.Entries))
+		printf("<ul>\n")
+		for entryidx, entry := range bucket.Entries {
+			if summarized && entryidx == 7 {
+				printf("  <li><details><summary>... (additional %d similar diffs))</summary>\n", len(bucket.Entries)-entryidx)
 			}
-			printf("],\n      rt: [")
-			for _, line := range entry.Diff.RT {
-				printf("%d,", linesidx[line])
-			}
-			printf("],\n      ops: [")
+			printf("  <li><details%s><summary>%s</summary><table>\n", cond(entryidx == 0, " open", ""), html.EscapeString(entry.Name))
+
+			x, xi, y, yi := entry.Diff.LT, 0, entry.Diff.RT, 0
 			for _, op := range entry.Diff.Ops {
-				printf("%d,%d,%d,", op.Del, op.Add, op.Keep)
-			}
-			printf("],\n    },\n")
-		}
-		printf("  ],\n")
-	}
-	printf("]\n")
+				for i, k := 0, min(op.Del, op.Add); i < k; i++ {
+					printf("    <tr>\n")
+					printf("      <td class='cSide cbgNegative'>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class='cSide cbgPositive'>%s</td>\n", html.EscapeString(y[yi]))
+					xi, yi = xi+1, yi+1
+				}
 
-	printf("\nmain()\n</script>\n</body>\n</html>\n")
+				for i, k := op.Add, op.Del; i < k; i++ {
+					printf("    <tr>\n")
+					printf("      <td class='cSide cbgNegative'>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class='cSide cbgNeutral'></td>\n")
+					xi++
+				}
+
+				for i, k := op.Del, op.Add; i < k; i++ {
+					printf("    <tr>\n")
+					printf("      <td class='cSide cbgNeutral'></td>\n")
+					printf("      <td class='cSide cbgPositive'>%s</td>\n", html.EscapeString(y[yi]))
+					yi++
+				}
+
+				for i, k := 0, op.Keep; i < k; i++ {
+					printf("    <tr>\n")
+					printf("      <td class=cSide>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class=cSide>%s</td>\n", html.EscapeString(y[yi]))
+					xi, yi = xi+1, yi+1
+				}
+			}
+			printf("  </table></details>\n")
+		}
+
+		if summarized {
+			printf("  </details>\n")
+		}
+		printf("</ul>\n<hr>\n\n")
+	}
+
+	printf("\n</body>\n</html>\n")
 	return w.String()
 }
