@@ -1,15 +1,17 @@
+- edmain: simplify VersionSystem: only resolve but instead of "clean" return whether the version is "current"?
+- edmain: allow specifying baseline via -version=...; also diff against the most recent effdump?
 - webdiff: add expand button for the collapsed sections
 - edmain: implement regex transformation
 - edmain: add a htmlprint, webprint subcommand
-- edmain: allow specifying baseline via -version=...; also diff against the most recent effdump?
 - edmain: add a diffkeys subcommand to list all keys with diffs to avoid the need for a new flag to control when "(xx more entries)" is displayed
+- webdiff: implement rerendering for unified/split change
 - webdiff: bold the actual diff within a change block
 - webdiff: add line numbers
 - webdiff: make it possible to switch to unified diff
 - webdiff: save the settings to localstorage or to a cookie
 - webdiff: implement collapsing
 - webdiff: make the selection work correctly
-- fmtdiff: add SetHunkHeaderRE(re string) error and SetHunkHeaderREs(keyglob, re ...string) error (default could be ^\S)
+- fmtdiff: add SetHunkHeaderREs(regexps []*RegExp): earlier regexps are higher priority; just take the latest highest priority regex as the hunk line
 - edmain: add a README to the tmpdir similar to /tmp/cache/go-build/README
 - edmain: add auto-trimming: if lasttrim is older than a day, delete dumps older than 8 days and touch lasttrim
 - unidiff: colorize output; -color is by default true iff os.Stdout is terminal or -watcherPID is set
