@@ -50,7 +50,7 @@ func HTMLBuckets(buckets []Bucket) string {
 		printf("<ul>\n")
 		for entryidx, entry := range bucket.Entries {
 			if summarized && entryidx == 7 {
-				printf("  <li><details><summary>... (additional %d similar diffs))</summary>\n", len(bucket.Entries)-entryidx)
+				printf("  <li><details><summary>... (additional %d similar diffs)</summary>\n", len(bucket.Entries)-entryidx)
 			}
 			printf("  <li><details%s><summary>%s</summary><table>\n", cond(entryidx == 0, " open", ""), html.EscapeString(entry.Name))
 
