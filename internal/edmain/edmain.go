@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"hash/fnv"
 	"io"
-	"math/rand"
 	"net"
 	"net/http"
 	"os"
@@ -39,15 +38,14 @@ type Params struct {
 	VSResolve    func(ctx context.Context, revision string) (version string, err error)
 
 	// Flags. Must be parsed by the caller after RegisterFlags.
-	Address    string
-	Color      string
-	Force      bool
-	OutputFile string
-	Revision   string
-	Sepch      string
-	Subkey     string
-	Version    string
-	Watch      bool
+	Address  string
+	Color    string
+	Force    bool
+	Revision string
+	Sepch    string
+	Subkey   string
+	Version  string
+	Watch    bool
 
 	// Internal helper vars.
 	tmpdir     string         // the dir for storing this effdump's versions
@@ -97,7 +95,6 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.Address, "address", ":8080", "The address to serve webdiff on.")
 	fs.StringVar(&p.Color, "color", "auto", "Whether to colorize the output. Valid values: auto|yes|no.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
-	fs.StringVar(&p.OutputFile, "o", "", "Override the output file for htmldiff and htmlprint. Use - to write to stdout.")
 	fs.StringVar(&p.Revision, "rev", "", "Use a given revision's name as the version. Defaults to HEAD revision.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 	fs.StringVar(&p.Subkey, "subkey", "",
@@ -251,16 +248,6 @@ func (p *Params) Run(ctx context.Context) error {
 	if !isIdentifier(p.version) {
 		return fmt.Errorf("edmain/check version: %q is not a short alphanumeric identifier", p.version)
 	}
-	if p.OutputFile == "" {
-		const alpha = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-		now := time.Now()
-		for {
-			p.OutputFile = filepath.Join(p.tmpdir, fmt.Sprintf("%d%c%04d.html", now.Year()%100, alpha[min(now.YearDay()/7, 51)], rand.Intn(1e4)))
-			if _, err := os.Stat(p.OutputFile); err != nil {
-				break
-			}
-		}
-	}
 
 	var subcommand string
 	var args []string
@@ -343,18 +330,9 @@ func (p *Params) Run(ctx context.Context) error {
 			return nil
 		}
 		html := fmtdiff.HTMLBuckets(buckets)
-		if p.OutputFile == "-" {
-			_, err := io.WriteString(p.Stdout, html)
-			if err != nil {
-				return fmt.Errorf("edmain/htmldiff to stdout: %v", err)
-			}
-			return nil
+		if _, err := io.WriteString(p.Stdout, html); err != nil {
+			return fmt.Errorf("edmain/htmldiff: %v", err)
 		}
-		err = os.WriteFile(p.OutputFile, []byte(html), 0644)
-		if err != nil {
-			return fmt.Errorf("edmain/write htmldiff file: %v", err)
-		}
-		fmt.Fprintf(p.Stdout, "NOTE: Output written to %s.\n", p.OutputFile)
 		return nil
 	case "keys":
 		for _, e := range p.Effects {
