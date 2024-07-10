@@ -15,6 +15,9 @@ import (
 //go:embed header.html
 var htmlHeader []byte
 
+//go:embed header.js
+var jsHeader []byte
+
 func cond[T any](c bool, ontrue, onfalse T) T {
 	if c {
 		return ontrue
@@ -62,6 +65,7 @@ func HTMLBuckets(buckets []Bucket) string {
 
 	// Render the header.
 	printf("%s\n", bytes.ReplaceAll(htmlHeader, []byte("${WIDTH}"), []byte(strconv.Itoa(width+2))))
+	printf("<script>\n%s</script>\n\n", jsHeader)
 
 	// Render the diff table.
 	for bucketid, bucket := range buckets {
@@ -106,15 +110,13 @@ func HTMLBuckets(buckets []Bucket) string {
 				}
 				if zipped > 0 {
 					printf("    <tr>\n")
-					printf("      <td class='cZipped cfgNeutral' colspan=2><button title=Expand>&nbsp;↕&nbsp;</button> @@ %d common lines @@</td>\n", zipped)
-					printf("    <span hidden>\n")
+					printf("      <td class='cZipped cfgNeutral' colspan=2><button title=Expand onclick=expand(event)>&nbsp;↕&nbsp;</button> @@ %d common lines @@</td>\n", zipped)
 					for i, k := 0, zipped; i < k; i++ {
-						printf("    <tr>\n")
-						printf("      <td class=cSide hidden>%s</td>\n", html.EscapeString(x[xi]))
-						printf("      <td class=cSide hidden>%s</td>\n", html.EscapeString(y[yi]))
+						printf("    <tr hidden>\n")
+						printf("      <td class=cSide>%s</td>\n", html.EscapeString(x[xi]))
+						printf("      <td class=cSide>%s</td>\n", html.EscapeString(y[yi]))
 						xi, yi = xi+1, yi+1
 					}
-					printf("    </span>\n")
 				}
 				for i, k := 0, post; i < k; i++ {
 					printf("    <tr>\n")
