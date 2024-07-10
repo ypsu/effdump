@@ -8,6 +8,8 @@ import (
 	"strings"
 
 	_ "embed"
+
+	"github.com/ypsu/effdump/internal/andiff"
 )
 
 //go:embed header.html
@@ -20,8 +22,26 @@ func cond[T any](c bool, ontrue, onfalse T) T {
 	return onfalse
 }
 
+func zip(op andiff.Op, last bool, contextLines int) (pre, zipped, post int) {
+	const minzip = 4 // minimum lines to zip, no zipping below this count
+	if op.Keep < contextLines+minzip {
+		return op.Keep, 0, 0
+	}
+	if op.Del == 0 && op.Add == 0 {
+		return 0, op.Keep - contextLines, contextLines
+	}
+	if last {
+		return contextLines, op.Keep - contextLines, 0
+	}
+	if op.Keep < 2*contextLines+minzip {
+		return op.Keep, 0, 0
+	}
+	return contextLines, op.Keep - 2*contextLines, contextLines
+}
+
 // HTMLBuckets formats a list of diff buckets into a HTML document.
 func HTMLBuckets(buckets []Bucket) string {
+	contextLines := 3
 	w := &strings.Builder{}
 	w.Grow(1 << 20)
 	printf := func(format string, args ...any) { fmt.Fprintf(w, format, args...) }
@@ -55,7 +75,7 @@ func HTMLBuckets(buckets []Bucket) string {
 			printf("  <li><details%s><summary>%s</summary><table>\n", cond(entryidx == 0, " open", ""), html.EscapeString(entry.Name))
 
 			x, xi, y, yi := entry.Diff.LT, 0, entry.Diff.RT, 0
-			for _, op := range entry.Diff.Ops {
+			for opidx, op := range entry.Diff.Ops {
 				for i, k := 0, min(op.Del, op.Add); i < k; i++ {
 					printf("    <tr>\n")
 					printf("      <td class='cSide cbgNegative'>%s</td>\n", html.EscapeString(x[xi]))
@@ -77,7 +97,26 @@ func HTMLBuckets(buckets []Bucket) string {
 					yi++
 				}
 
-				for i, k := 0, op.Keep; i < k; i++ {
+				pre, zipped, post := zip(op, opidx == len(entry.Diff.Ops)-1, contextLines)
+				for i, k := 0, pre; i < k; i++ {
+					printf("    <tr>\n")
+					printf("      <td class=cSide>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class=cSide>%s</td>\n", html.EscapeString(y[yi]))
+					xi, yi = xi+1, yi+1
+				}
+				if zipped > 0 {
+					printf("    <tr>\n")
+					printf("      <td class='cZipped cfgNeutral' colspan=2><button title=Expand>&nbsp;↕&nbsp;</button> @@ %d common lines @@</td>\n", zipped)
+					printf("    <span hidden>\n")
+					for i, k := 0, zipped; i < k; i++ {
+						printf("    <tr>\n")
+						printf("      <td class=cSide hidden>%s</td>\n", html.EscapeString(x[xi]))
+						printf("      <td class=cSide hidden>%s</td>\n", html.EscapeString(y[yi]))
+						xi, yi = xi+1, yi+1
+					}
+					printf("    </span>\n")
+				}
+				for i, k := 0, post; i < k; i++ {
 					printf("    <tr>\n")
 					printf("      <td class=cSide>%s</td>\n", html.EscapeString(x[xi]))
 					printf("      <td class=cSide>%s</td>\n", html.EscapeString(y[yi]))
