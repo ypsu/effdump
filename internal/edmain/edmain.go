@@ -29,28 +29,30 @@ import (
 
 // Params contains most of the I/O dependencies for the Run().
 type Params struct {
-	Name           string
-	Effects        []keyvalue.KV
-	Stdout         io.Writer
-	Args           []string
-	Env            []string
-	Flagset        *flag.FlagSet // for Usage().
-	FetchVersion   func(context.Context) (version string, clean bool, err error)
-	ResolveVersion func(ctx context.Context, ref string) (version string, err error)
+	Name         string
+	Effects      []keyvalue.KV
+	Stdout       io.Writer
+	Args         []string
+	Env          []string
+	Flagset      *flag.FlagSet // for Usage().
+	VSHasChanges func(context.Context) (dirty bool, err error)
+	VSResolve    func(ctx context.Context, revision string) (version string, err error)
 
 	// Flags. Must be parsed by the caller after RegisterFlags.
 	Address    string
 	Color      string
 	Force      bool
 	OutputFile string
+	Revision   string
 	Sepch      string
 	Subkey     string
+	Version    string
 	Watch      bool
 
 	// Internal helper vars.
 	tmpdir     string         // the dir for storing this effdump's versions
 	version    string         // the baseline version of the source
-	clean      bool           // whether the working dir is clean
+	dirty      bool           // whether the working dir is dirty
 	filter     *regexp.Regexp // the entries to print or diff
 	watcherpid string         // parent -watch process PID, if one is running
 }
@@ -96,10 +98,15 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.Color, "color", "auto", "Whether to colorize the output. Valid values: auto|yes|no.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
 	fs.StringVar(&p.OutputFile, "o", "", "Override the output file for htmldiff and htmlprint. Use - to write to stdout.")
+	fs.StringVar(&p.Revision, "rev", "", "Use a given revision's name as the version. Defaults to HEAD revision.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 	fs.StringVar(&p.Subkey, "subkey", "",
 		"Parse each value as a textar, pick subkey's value, and then operate on that section only.\n"+
 			"Especially useful for printraw to print a portion of the result.")
+	fs.StringVar(&p.Version, "version", "",
+		"Use this as the given version name.\n"+
+			"The difference to -rev is that this doesn't try resolve this through the version control system.\n"+
+			"Useful for giving specific outputs a specific name.")
 	fs.BoolVar(&p.Watch, "watch", false, "If set then continuously re-run the command on any file change under the current directory. Linux only.")
 }
 
@@ -116,8 +123,8 @@ func isIdentifier(v string) bool {
 }
 
 func (p *Params) cmdSave(_ context.Context) error {
-	if !p.clean && !p.Force {
-		return fmt.Errorf("edmain/clean check: saving from unclean workdir not allowed unless the -force flag is set")
+	if p.dirty && !p.Force {
+		return fmt.Errorf("edmain/clean check: saving from a dirty workdir not allowed unless the -force flag is set")
 	}
 	hash := Hash(p.Effects)
 
@@ -229,9 +236,17 @@ func (p *Params) Run(ctx context.Context) error {
 			p.watcherpid = pid
 		}
 	}
-	p.version, p.clean, err = p.FetchVersion(ctx)
+	p.dirty, err = p.VSHasChanges(ctx)
 	if err != nil {
-		return fmt.Errorf("edmain/fetch version: %v", err)
+		return fmt.Errorf("edmain/check for changes: %v", err)
+	}
+	if p.Version == "" {
+		p.version, err = p.VSResolve(ctx, p.Revision)
+		if err != nil {
+			return fmt.Errorf("edmain/resolve revision %q: %v", p.Revision, err)
+		}
+	} else {
+		p.version = p.Version
 	}
 	if !isIdentifier(p.version) {
 		return fmt.Errorf("edmain/check version: %q is not a short alphanumeric identifier", p.version)
@@ -252,12 +267,12 @@ func (p *Params) Run(ctx context.Context) error {
 	if len(p.Args) >= 1 {
 		subcommand, args = p.Args[0], p.Args[1:]
 	} else {
-		if p.clean {
-			fmt.Fprintln(p.Stdout, `NOTE: subcommand not given, picking "save" because working dir is clean.`)
-			subcommand = "save"
-		} else {
+		if p.dirty {
 			fmt.Fprintln(p.Stdout, `NOTE: subcommand not given, picking "diff" because working dir is unclean.`)
 			subcommand = "diff"
+		} else {
+			fmt.Fprintln(p.Stdout, `NOTE: subcommand not given, picking "save" because working dir is clean.`)
+			subcommand = "save"
 		}
 	}
 	if subcommand == "save" && len(args) >= 1 {

@@ -1,6 +1,5 @@
-- edmain: simplify VersionSystem: only resolve but instead of "clean" return whether the version is "current"?
-- edmain: allow specifying baseline via -version=...; also diff against the most recent effdump?
 - webdiff: add expand button for the collapsed sections
+- edmain: make subcommands into flags, e.g. blah -diff or blah -save, less error prone, can remove the order check
 - edmain: implement regex transformation
 - edmain: add a htmlprint, webprint subcommand
 - edmain: add a diffkeys subcommand to list all keys with diffs to avoid the need for a new flag to control when "(xx more entries)" is displayed

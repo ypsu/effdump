@@ -104,24 +104,24 @@ func mkdump() (*effdump.Dump, error) {
 
 	// Set up common helpers for the CLI tests.
 	group, key, desc, w, log := "", "", "", &strings.Builder{}, &strings.Builder{}
-	fetchVersion, fetchClean, fetchErr := "dummyversion", true, error(nil)
+	fetchVersion, fetchDirty, fetchErr := "dummyversion", false, error(nil)
 	p := &edmain.Params{
 		Name:   "testdump",
 		Env:    []string{"EFFDUMP_DIR=" + tmpdir},
 		Stdout: w,
 
-		FetchVersion: func(context.Context) (string, bool, error) {
-			edbg.Printf("FetchVersion() -> (%q, %t, %v)\n", fetchVersion, fetchClean, fetchErr)
-			return fetchVersion, fetchClean, fetchErr
+		VSHasChanges: func(context.Context) (bool, error) {
+			edbg.Printf("VSHasChanges() -> (%t, %v)\n", fetchDirty, fetchErr)
+			return fetchDirty, fetchErr
 		},
 
-		ResolveVersion: func(_ context.Context, ref string) (string, error) {
-			edbg.Printf("ResolveVersion(%s) -> (%q, %v)\n", ref, fetchVersion, fetchErr)
+		VSResolve: func(_ context.Context, ref string) (string, error) {
+			edbg.Printf("VSResolve(%q) -> (%q, %v)\n", ref, fetchVersion, fetchErr)
 			return fetchVersion, fetchErr
 		},
 	}
 	reset := func() {
-		fetchVersion, fetchClean = "numsbase", true
+		fetchVersion, fetchDirty = "numsbase", false
 		p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
 	}
 	run := func(args ...string) {
@@ -232,7 +232,7 @@ func mkdump() (*effdump.Dump, error) {
 		run("diff")
 	}
 	setdesc("diff-by-default", "Diff is the default command to run in unclean clients.")
-	fetchClean = false
+	fetchDirty = true
 	p.Effects = slices.Clone(numsbase)
 	p.Effects[1].V += "10\n"
 	run()
@@ -279,20 +279,20 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("with-args", "Save cannot take args.")
 	run("save", "somearg")
 	setdesc("unclean-save-not-forced", "Save in unclean client needs -force.")
-	fetchVersion, fetchClean = "saved", false
+	fetchVersion, fetchDirty = "saved", true
 	run("save")
 	setdesc("unclean-save-forced", "Save in unclean client works with -forced.")
-	fetchVersion, fetchClean = "saved", false
+	fetchVersion, fetchDirty = "saved", true
 	run("-force", "save")
 	setdesc("clean-save-skipped", "Save of an already existing file with the same hash is skipped.")
-	fetchVersion, fetchClean = "saved", true
+	fetchVersion, fetchDirty = "saved", false
 	run("save")
 	setdesc("clean-save-rewritten", "Save of an already existing file with different hash is not skipped.")
 	os.Truncate(filepath.Join(tmpdir, "saved.gz"), 0)
-	fetchVersion, fetchClean = "saved", true
+	fetchVersion, fetchDirty = "saved", false
 	run("save")
 	setdesc("save-by-default", "Save is the default command in clean commands.")
-	fetchVersion, fetchClean = "saved", true
+	fetchVersion, fetchDirty = "saved", false
 	run()
 
 	group = "cmd-clear"

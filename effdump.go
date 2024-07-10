@@ -92,7 +92,7 @@ func (d *Dump) Run(ctx context.Context) {
 	}
 
 	d.params.Args = flag.Args()
-	if d.params.FetchVersion == nil {
+	if d.params.VSHasChanges == nil {
 		d.SetVersionSystem(git.New())
 	}
 
@@ -107,16 +107,21 @@ func (d *Dump) Run(ctx context.Context) {
 	os.Exit(0)
 }
 
-// VersionSystem fetches and resolves the source code version from the current environment.
-// The returned version should be alphanumeric because it's going to be used as filenames.
+// VersionSystem resolves source code versions from the current environment.
 type VersionSystem interface {
-	Fetch(context.Context) (version string, clean bool, err error)
-	Resolve(ctx context.Context, ref string) (version string, err error)
+	// HasChanges tells effdump whether the current directory has changes compared the HEAD revision.
+	// effdump uses this to determine the default action when used with no-args mode.
+	HasChanges(context.Context) (dirty bool, err error)
+
+	// Resolve references like "HEAD" and "HEAD^" to a version.
+	// effdump passes empty revision to look up the current HEAD.
+	// The returned version should be alphanumeric because it's going to be used as filenames.
+	Resolve(ctx context.Context, revision string) (version string, err error)
 }
 
 // SetVersionSystem overrides the version control system effdump uses.
 // The default is git if this function isn't called.
 func (d *Dump) SetVersionSystem(vs VersionSystem) {
-	d.params.FetchVersion = vs.Fetch
-	d.params.ResolveVersion = vs.Resolve
+	d.params.VSHasChanges = vs.HasChanges
+	d.params.VSResolve = vs.Resolve
 }
