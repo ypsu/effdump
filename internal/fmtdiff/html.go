@@ -82,21 +82,27 @@ func HTMLBuckets(buckets []Bucket) string {
 			for opidx, op := range entry.Diff.Ops {
 				for i, k := 0, min(op.Del, op.Add); i < k; i++ {
 					printf("    <tr>\n")
+					printf("      <td class='cNum cbgNegative'>%d</td>\n", xi+1)
 					printf("      <td class='cSide cbgNegative'>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class='cNum cbgPositive'>%d</td>\n", yi+1)
 					printf("      <td class='cSide cbgPositive'>%s</td>\n", html.EscapeString(y[yi]))
 					xi, yi = xi+1, yi+1
 				}
 
 				for i, k := op.Add, op.Del; i < k; i++ {
 					printf("    <tr>\n")
+					printf("      <td class='cNum cbgNegative'>%d</td>\n", xi+1)
 					printf("      <td class='cSide cbgNegative'>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class='cNum cbgNeutral'> </td>\n")
 					printf("      <td class='cSide cbgNeutral'></td>\n")
 					xi++
 				}
 
 				for i, k := op.Del, op.Add; i < k; i++ {
 					printf("    <tr>\n")
+					printf("      <td class='cNum cbgNeutral'> </td>\n")
 					printf("      <td class='cSide cbgNeutral'></td>\n")
+					printf("      <td class='cNum cbgPositive'>%d</td>\n", yi+1)
 					printf("      <td class='cSide cbgPositive'>%s</td>\n", html.EscapeString(y[yi]))
 					yi++
 				}
@@ -104,23 +110,29 @@ func HTMLBuckets(buckets []Bucket) string {
 				pre, zipped, post := zip(op, opidx == len(entry.Diff.Ops)-1, contextLines)
 				for i, k := 0, pre; i < k; i++ {
 					printf("    <tr>\n")
+					printf("      <td class=cNum>%d</td>\n", xi+1)
 					printf("      <td class=cSide>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class=cNum>%d</td>\n", yi+1)
 					printf("      <td class=cSide>%s</td>\n", html.EscapeString(y[yi]))
 					xi, yi = xi+1, yi+1
 				}
 				if zipped > 0 {
 					printf("    <tr>\n")
-					printf("      <td class='cZipped cfgNeutral' colspan=2><button title=Expand onclick=expand(event)>&nbsp;↕&nbsp;</button> @@ %d common lines @@</td>\n", zipped)
+					printf("      <td class='cZipped cfgNeutral' colspan=4><button title=Expand onclick=expand(event)>&nbsp;↕&nbsp;</button> @@ %d common lines @@</td>\n", zipped)
 					for i, k := 0, zipped; i < k; i++ {
 						printf("    <tr hidden>\n")
+						printf("      <td class=cNum>%d</td>\n", xi+1)
 						printf("      <td class=cSide>%s</td>\n", html.EscapeString(x[xi]))
+						printf("      <td class=cNum>%d</td>\n", yi+1)
 						printf("      <td class=cSide>%s</td>\n", html.EscapeString(y[yi]))
 						xi, yi = xi+1, yi+1
 					}
 				}
 				for i, k := 0, post; i < k; i++ {
 					printf("    <tr>\n")
+					printf("      <td class=cNum>%d</td>\n", xi+1)
 					printf("      <td class=cSide>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class=cNum>%d</td>\n", yi+1)
 					printf("      <td class=cSide>%s</td>\n", html.EscapeString(y[yi]))
 					xi, yi = xi+1, yi+1
 				}

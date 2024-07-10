@@ -12,15 +12,22 @@
       border: 1px solid;
       border-collapse: collapse;
     }
-    .cSide {
+    .cNum, .cSide {
       border-top: none;
       border-bottom: none;
       font-family: monospace;
-      padding-left: 1ch;
       vertical-align: top;
-      width: ${WIDTH}ch;
       white-space: pre-wrap;
       word-wrap: break-word;
+    }
+    .cSide {
+      padding-left: 1ch;
+      width: ${WIDTH}ch;
+    }
+    .cNum {
+      padding-right: 1ch;
+      text-align: right;
+      width: 4ch;
     }
 
     :root {
