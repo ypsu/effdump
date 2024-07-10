@@ -388,9 +388,9 @@ func (p *Params) Run(ctx context.Context) error {
 }
 
 func (p *Params) serve(_ context.Context, s string) error {
-	t, content := time.Now(), strings.NewReader(s)
+	t := time.Now()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
-		http.ServeContent(w, req, "", t, content)
+		http.ServeContent(w, req, "", t, strings.NewReader(s))
 	})
 	listener, err := net.Listen("tcp", p.Address)
 	if err != nil {
