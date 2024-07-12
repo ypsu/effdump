@@ -93,10 +93,15 @@ func mkdump() (*effdump.Dump, error) {
 				rt.WriteString(line[1:] + "\n")
 			}
 		}
-		diff := fmtdiff.Unified(andiff.Compute(lt.String(), rt.String()))
+		diff := andiff.Compute(lt.String(), rt.String())
 		kvs := make([]keyvalue.KV, 0, 3)
+		w := &strings.Builder{}
 		kvs = append(kvs, keyvalue.KV{"input", kv.V})
-		kvs = append(kvs, keyvalue.KV{"result", diff})
+		for _, op := range diff.Ops {
+			fmt.Fprintf(w, "%+v\n", op)
+		}
+		kvs = append(kvs, keyvalue.KV{"diff", w.String()})
+		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff)})
 		kvs = append(kvs, keyvalue.KV{"debuglog", debuglog.String()})
 		debuglog.Reset()
 		d.Add("diffs/"+kv.K, textar.Format(kvs, '-'))
