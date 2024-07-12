@@ -102,9 +102,9 @@ func mkdump() (*effdump.Dump, error) {
 		}
 		kvs = append(kvs, keyvalue.KV{"diff", w.String()})
 		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff)})
-		kvs = append(kvs, keyvalue.KV{"debuglog", debuglog.String()})
-		debuglog.Reset()
-		d.Add("diffs/"+kv.K, textar.Format(kvs, '-'))
+		d.Add("diffs/"+kv.K+".txt", textar.Format(kvs, '-'))
+		buckets := []fmtdiff.Bucket{{Entries: []fmtdiff.Entry{{Name: "html", Diff: diff}}}}
+		d.Add("diffs/"+kv.K+".html", fmtdiff.HTMLBuckets(buckets))
 	}
 
 	// Set up common helpers for the CLI tests.
