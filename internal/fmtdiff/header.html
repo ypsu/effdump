@@ -12,7 +12,7 @@
       border: 1px solid;
       border-collapse: collapse;
     }
-    .cNum, .cSide {
+    .cNum, .cSide, .cUnified {
       border-top: none;
       border-bottom: none;
       font-family: monospace;
@@ -22,9 +22,16 @@
     }
     .cSide {
       padding-left: 1ch;
-      width: ${WIDTH}ch;
+      padding-right: 1ch;
+      width: ${SIDEWIDTH}ch;
+    }
+    .cUnified {
+      padding-left: 1ch;
+      padding-right: 1ch;
+      width: ${FULLWIDTH}ch;
     }
     .cNum {
+      padding-left: 1ch;
       padding-right: 1ch;
       text-align: right;
       width: 4ch;
@@ -83,3 +90,6 @@
   </style>
 </head>
 <body>
+
+<p><button title="Switches diffs into unified diff mode" onclick=unify(event)>Unify</button></p>
+<hr>

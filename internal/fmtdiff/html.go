@@ -1,7 +1,6 @@
 package fmtdiff
 
 import (
-	"bytes"
 	"fmt"
 	"html"
 	"strconv"
@@ -13,10 +12,10 @@ import (
 )
 
 //go:embed header.html
-var htmlHeader []byte
+var htmlHeader string
 
 //go:embed header.js
-var jsHeader []byte
+var jsHeader string
 
 func cond[T any](c bool, ontrue, onfalse T) T {
 	if c {
@@ -61,10 +60,13 @@ func HTMLBuckets(buckets []Bucket) string {
 			}
 		}
 	}
-	width = min(120, width)
 
 	// Render the header.
-	printf("%s\n", bytes.ReplaceAll(htmlHeader, []byte("${WIDTH}"), []byte(strconv.Itoa(width+2))))
+	replacer := strings.NewReplacer(
+		"${SIDEWIDTH}", strconv.Itoa(min(120, width)+2),
+		"${FULLWIDTH}", strconv.Itoa(width+2),
+	)
+	printf("%s\n", replacer.Replace(htmlHeader))
 	printf("<script>\n%s</script>\n\n", jsHeader)
 
 	// Render the diff table.
