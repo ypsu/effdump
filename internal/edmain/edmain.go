@@ -46,12 +46,14 @@ type Params struct {
 	Subkey   string
 	Version  string
 	Watch    bool
+	RMRegexp string
 
 	// Internal helper vars.
 	tmpdir     string         // the dir for storing this effdump's versions
 	version    string         // the baseline version of the source
 	dirty      bool           // whether the working dir is dirty
 	filter     *regexp.Regexp // the entries to print or diff
+	rmregexp   *regexp.Regexp // the removal regexp
 	watcherpid string         // parent -watch process PID, if one is running
 }
 
@@ -105,6 +107,7 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 			"The difference to -rev is that this doesn't try resolve this through the version control system.\n"+
 			"Useful for giving specific outputs a specific name.")
 	fs.BoolVar(&p.Watch, "watch", false, "If set then continuously re-run the command on any file change under the current directory. Linux only.")
+	fs.StringVar(&p.RMRegexp, "x", "", "Remove matching regexp portions of the inputs when computing diffs. Use ^\\s* to ignore leading whitespace.")
 }
 
 func isIdentifier(v string) bool {
@@ -177,16 +180,16 @@ func (p *Params) diff() ([]fmtdiff.Bucket, error) {
 	for len(lt) > 0 || len(rt) > 0 {
 		switch {
 		case len(rt) == 0 || len(lt) > 0 && lt[0].K < rt[0].K:
-			e = fmtdiff.Entry{lt[0].K, "deleted", andiff.Compute(lt[0].V, "", nil)}
+			e = fmtdiff.Entry{lt[0].K, "deleted", andiff.Compute(lt[0].V, "", p.rmregexp)}
 			lt, n = lt[1:], n+1
 		case len(lt) == 0 || len(rt) > 0 && lt[0].K > rt[0].K:
-			e = fmtdiff.Entry{rt[0].K, "added", andiff.Compute("", rt[0].V, nil)}
+			e = fmtdiff.Entry{rt[0].K, "added", andiff.Compute("", rt[0].V, p.rmregexp)}
 			rt, n = rt[1:], n+1
 		case lt[0].K == rt[0].K && lt[0].V == rt[0].V:
 			lt, rt = lt[1:], rt[1:]
 			continue
 		default:
-			e = fmtdiff.Entry{lt[0].K, "changed", andiff.Compute(lt[0].V, rt[0].V, nil)}
+			e = fmtdiff.Entry{lt[0].K, "changed", andiff.Compute(lt[0].V, rt[0].V, p.rmregexp)}
 			lt, rt, n = lt[1:], rt[1:], n+1
 		}
 		idx, exists := hash2idx[e.Diff.Hash]
@@ -247,6 +250,12 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 	if !isIdentifier(p.version) {
 		return fmt.Errorf("edmain/check version: %q is not a short alphanumeric identifier", p.version)
+	}
+	if p.RMRegexp != "" {
+		p.rmregexp, err = regexp.Compile(p.RMRegexp)
+		if err != nil {
+			return fmt.Errorf("edmain/compile -x regexp: %v", err)
+		}
 	}
 
 	var subcommand string

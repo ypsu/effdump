@@ -1,4 +1,3 @@
-- edmain: implement removal regexes (-x); include removal regex in html report
 - edmain: add a diffkeys subcommand to list all keys with diffs to avoid the need for a new flag to control when "(xx more entries)" is displayed
 - webdiff: make the selection work correctly
 - fmtdiff: add SetHunkHeaderREs(regexps []*RegExp): earlier regexps are higher priority; just take the latest highest priority regex as the hunk line

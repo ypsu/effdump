@@ -125,11 +125,12 @@ func mkdump() (*effdump.Dump, error) {
 
 	// Set up common helpers for the CLI tests.
 	group, key, desc, w, log := "", "", "", &strings.Builder{}, &strings.Builder{}
-	fetchVersion, fetchDirty, fetchErr := "dummyversion", false, error(nil)
-	p := &edmain.Params{
-		Name:   "testdump",
-		Env:    []string{"EFFDUMP_DIR=" + tmpdir},
-		Stdout: w,
+	fetchVersion, fetchDirty, fetchErr := "numsbase", false, error(nil)
+	baseParams := edmain.Params{
+		Name:    "testdump",
+		Effects: textar.Parse(nil, testdata("numsbase.textar")),
+		Env:     []string{"EFFDUMP_DIR=" + tmpdir},
+		Stdout:  w,
 
 		VSHasChanges: func(context.Context) (bool, error) {
 			edbg.Printf("VSHasChanges() -> (%t, %v)\n", fetchDirty, fetchErr)
@@ -141,10 +142,7 @@ func mkdump() (*effdump.Dump, error) {
 			return fetchVersion, fetchErr
 		},
 	}
-	reset := func() {
-		fetchVersion, fetchDirty = "numsbase", false
-		p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
-	}
+	p := baseParams
 	run := func(args ...string) {
 		kvs := make([]keyvalue.KV, 1, 4)
 		kvs[0] = keyvalue.KV{"desc", fmt.Sprintf("%s\n\nargs: testdump %q", desc, args)}
@@ -175,12 +173,12 @@ func mkdump() (*effdump.Dump, error) {
 		d.Add(key, textar.Format(kvs, '~'))
 
 		// Reset defaults for the next testcase.
-		reset()
+		p, fetchVersion, fetchDirty = baseParams, "numsbase", false
+		p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
 	}
 	setdesc := func(name, description string) { key, desc = fmt.Sprintf("%s/%s", group, name), description }
 
 	// The baseline for the following tests will be numsbase.
-	reset()
 	numsbase := textar.Parse(nil, testdata("numsbase.textar"))
 	gz, err := edmain.Compress(numsbase, '=', edmain.Hash(numsbase))
 	if err != nil {
