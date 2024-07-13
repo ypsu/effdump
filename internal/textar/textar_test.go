@@ -11,7 +11,7 @@ import (
 func TestAr(t *testing.T) {
 	src := []keyvalue.KV{
 		{"hello", "world"},
-		{"a newline\nname", "multiple\nlines\nin value too\n"},
+		{"a name with spaces", "multiple\nlines\nin value too\n"},
 		{"", "this has no name\n--- and has 3 dashes too\n"},
 		{"last", "entry"},
 	}

@@ -78,6 +78,7 @@ func mkdump() (*effdump.Dump, error) {
 	diffar := textar.Parse(nil, testdata("trickydiffs.textar"))
 	for _, kv := range diffar {
 		lt, rt := &strings.Builder{}, &strings.Builder{}
+		name, args, _ := strings.Cut(kv.K, " ")
 		for _, line := range strings.Split(kv.V, "\n") {
 			if line == "" {
 				line = " "
@@ -94,7 +95,10 @@ func mkdump() (*effdump.Dump, error) {
 			}
 		}
 		diff := andiff.Compute(lt.String(), rt.String())
-		kvs := make([]keyvalue.KV, 0, 3)
+		kvs := make([]keyvalue.KV, 0, 4)
+		if args != "" {
+			kvs = append(kvs, keyvalue.KV{"args", args + "\n"})
+		}
 		w := &strings.Builder{}
 		kvs = append(kvs, keyvalue.KV{"input", kv.V})
 		for _, op := range diff.Ops {
@@ -102,9 +106,9 @@ func mkdump() (*effdump.Dump, error) {
 		}
 		kvs = append(kvs, keyvalue.KV{"diff", w.String()})
 		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff)})
-		d.Add("diffs/"+kv.K+".txt", textar.Format(kvs, '-'))
+		d.Add("diffs/"+name+".txt", textar.Format(kvs, '-'))
 		buckets := []fmtdiff.Bucket{{Entries: []fmtdiff.Entry{{Name: "html", Diff: diff}}}}
-		d.Add("diffs/"+kv.K+".html", fmtdiff.HTMLBuckets(buckets))
+		d.Add("diffs/"+name+".html", fmtdiff.HTMLBuckets(buckets))
 	}
 
 	// Set up common helpers for the CLI tests.

@@ -2,22 +2,10 @@
 package textar
 
 import (
-	"fmt"
 	"strings"
 
 	"github.com/ypsu/effdump/internal/keyvalue"
 )
-
-func quote(s string) string {
-	q := fmt.Sprintf("%q", s)
-	return q[1 : len(q)-1]
-}
-
-func unquote(q string) string {
-	var s string
-	fmt.Sscanf(`"`+q+`"`, "%q", &s)
-	return s
-}
 
 // Format encodes key value pairs into a textar string.
 // sepch is the separator character.
@@ -49,7 +37,7 @@ func Format(kvs []keyvalue.KV, sepch byte) string {
 			w.WriteString("\n")
 		}
 		w.WriteString(sep)
-		w.WriteString(quote(kv.K))
+		w.WriteString(strings.ReplaceAll(kv.K, "\n", "\\n"))
 		w.WriteString("\n")
 		w.WriteString(kv.V)
 	}
@@ -69,7 +57,7 @@ func Parse(dst []keyvalue.KV, ar string) []keyvalue.KV {
 			return dst
 		}
 		value, rest, ok = strings.Cut(rest, sep)
-		dst = append(dst, keyvalue.KV{unquote(key), value})
+		dst = append(dst, keyvalue.KV{key, value})
 	}
 	return dst
 }
