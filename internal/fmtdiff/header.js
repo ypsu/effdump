@@ -15,7 +15,7 @@ function unify(evt) {
         add = ''
         continue
       }
-      if (row.children[3].className == 'cSide') {
+      if (row.children[3].className == 'cRight') {
         // Unchanged line.
         let hidden = ''
         if (row.hidden) hidden = 'hidden'
@@ -25,13 +25,13 @@ function unify(evt) {
         t += `<td class=cUnified>` + row.children[3].innerHTML
         add = ''
       }
-      if (row.children[1].className == 'cSide cbgNegative') {
+      if (row.children[1].className == 'cLeft cbgNegative') {
         t += `<tr>`
         t += `<td class="cNum cbgNegative">` + row.children[0].innerHTML
         t += `<td class="cNum cbgNegative">`
         t += `<td class="cUnified cbgNegative">` + row.children[1].innerHTML
       }
-      if (row.children[3].className == 'cSide cbgPositive') {
+      if (row.children[3].className == 'cRight cbgPositive') {
         add += `<tr>`
         add += `<td class="cNum cbgPositive">`
         add += `<td class="cNum cbgPositive">` + row.children[2].innerHTML
