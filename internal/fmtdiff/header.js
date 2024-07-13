@@ -1,9 +1,11 @@
+// expand expands the zipped blocked right after the button.
 function expand(evt) {
   let n = evt.target.parentNode.parentNode
   n.hidden = true
   for (n = n.nextSibling; n != null && n.hidden; n = n.nextSibling) n.hidden = false
 }
 
+// unify converts the split diff into unified diff.
 function unify(evt) {
   evt.target.hidden = true
   for (let table of document.getElementsByTagName('table')) {
@@ -41,3 +43,19 @@ function unify(evt) {
     table.innerHTML = t + add
   }
 }
+
+// This is the logic for ensuring selecting from one column in the diff is possible.
+function selectSide(toenable, todisable) {
+  if (!toenable.disabled) return
+  toenable.disabled = false
+  todisable.disabled = true
+  // Clear selection to avoid spurious drag events.
+  window.getSelection().empty()
+}
+function handleclick(evt) {
+  if (evt.target.classList.contains('cRight')) selectSide(hRightSelect, hLeftSelect)
+  if (evt.target.classList.contains('cLeft')) selectSide(hLeftSelect, hRightSelect)
+}
+hLeftSelect.disabled = true
+hRightSelect.disabled = true
+selectSide(hRightSelect, hLeftSelect)

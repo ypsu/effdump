@@ -34,6 +34,7 @@
       padding-left: 1ch;
       padding-right: 1ch;
       text-align: right;
+      user-select: none;
       width: 4ch;
     }
 
@@ -88,8 +89,17 @@
     .cfgSpecial   { color: var(--fg-special); }
     .cfgInverted  { color: var(--fg-inverted); }
   </style>
+
+  <style id=hLeftSelect>
+    .cLeft { user-select: text; }
+    .cRight { user-select: none; }
+  </style>
+  <style id=hRightSelect>
+    .cLeft { user-select: none; }
+    .cRight { user-select: text; }
+  </style>
 </head>
-<body>
+<body onmousedown=handleclick(event)>
 
 <p><button title="Switches diffs into unified diff mode" onclick=unify(event)>Unify</button></p>
 <hr>
