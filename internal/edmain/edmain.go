@@ -177,16 +177,16 @@ func (p *Params) diff() ([]fmtdiff.Bucket, error) {
 	for len(lt) > 0 || len(rt) > 0 {
 		switch {
 		case len(rt) == 0 || len(lt) > 0 && lt[0].K < rt[0].K:
-			e = fmtdiff.Entry{lt[0].K, "deleted", andiff.Compute(lt[0].V, "")}
+			e = fmtdiff.Entry{lt[0].K, "deleted", andiff.Compute(lt[0].V, "", nil)}
 			lt, n = lt[1:], n+1
 		case len(lt) == 0 || len(rt) > 0 && lt[0].K > rt[0].K:
-			e = fmtdiff.Entry{rt[0].K, "added", andiff.Compute("", rt[0].V)}
+			e = fmtdiff.Entry{rt[0].K, "added", andiff.Compute("", rt[0].V, nil)}
 			rt, n = rt[1:], n+1
 		case lt[0].K == rt[0].K && lt[0].V == rt[0].V:
 			lt, rt = lt[1:], rt[1:]
 			continue
 		default:
-			e = fmtdiff.Entry{lt[0].K, "changed", andiff.Compute(lt[0].V, rt[0].V)}
+			e = fmtdiff.Entry{lt[0].K, "changed", andiff.Compute(lt[0].V, rt[0].V, nil)}
 			lt, rt, n = lt[1:], rt[1:], n+1
 		}
 		idx, exists := hash2idx[e.Diff.Hash]

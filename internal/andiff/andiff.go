@@ -5,6 +5,8 @@ package andiff
 
 import (
 	"hash/fnv"
+	"regexp"
+	"slices"
 	"sort"
 	"strings"
 )
@@ -38,10 +40,21 @@ func split(s string) []string {
 }
 
 // Compute computes the Diff between two strings.
-func Compute(lt, rt string) Diff {
-	x, y := split(lt), split(rt)
-	if lt == rt {
-		return Diff{x, y, []Op{{0, 0, len(x)}}, 0}
+// If rmregexp is non-nil, the matching parts are removed from each line first.
+func Compute(lt, rt string, rmregexp *regexp.Regexp) Diff {
+	origx, origy := split(lt), split(rt)
+	x, y := origx, origy
+	if rmregexp != nil {
+		x, y = slices.Clone(x), slices.Clone(y)
+		for i, s := range x {
+			x[i] = rmregexp.ReplaceAllString(s, "")
+		}
+		for i, s := range y {
+			y[i] = rmregexp.ReplaceAllString(s, "")
+		}
+	}
+	if strings.Join(x, "\n") == strings.Join(y, "\n") {
+		return Diff{origx, origy, []Op{{0, 0, len(x)}}, 0}
 	}
 	h := fnv.New64()
 
@@ -142,7 +155,7 @@ func Compute(lt, rt string) Diff {
 		}
 		ops = append(ops, Op{len(x) - xi, len(y) - yi, 0})
 	}
-	return Diff{x, y, ops, h.Sum64()}
+	return Diff{origx, origy, ops, h.Sum64()}
 }
 
 func countIndent(s string) int {

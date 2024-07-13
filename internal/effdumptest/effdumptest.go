@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"slices"
 	"strconv"
 	"strings"
@@ -94,8 +95,19 @@ func mkdump() (*effdump.Dump, error) {
 				rt.WriteString(line[1:] + "\n")
 			}
 		}
-		diff := andiff.Compute(lt.String(), rt.String())
+
 		kvs := make([]keyvalue.KV, 0, 4)
+		var rmregexp *regexp.Regexp
+		for _, arg := range strings.Split(args, " ") {
+			if arg == "" {
+				continue
+			} else if re, ok := strings.CutPrefix(arg, "-x="); ok {
+				rmregexp = regexp.MustCompile(re)
+			} else {
+				kvs = append(kvs, keyvalue.KV{"error", "invalid arg: " + arg})
+			}
+		}
+		diff := andiff.Compute(lt.String(), rt.String(), rmregexp)
 		if args != "" {
 			kvs = append(kvs, keyvalue.KV{"args", args + "\n"})
 		}
