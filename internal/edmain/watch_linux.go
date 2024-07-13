@@ -132,6 +132,9 @@ func reportchanges(changed chan<- bool) {
 
 	var watchpath func(string)
 	watchpath = func(p string) {
+		if p == ".git" {
+			return
+		}
 		mask := uint32(0) |
 			syscall.IN_CLOSE_WRITE |
 			syscall.IN_CREATE |
