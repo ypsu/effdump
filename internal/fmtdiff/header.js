@@ -21,7 +21,9 @@ function unify(evt) {
     let add = ''
     for (let row of table.tBodies[0].childNodes) {
       if (row.children.length == 1) {
-        t += add + `<tr><td colspan=3 class="cZipped cfgNeutral">` + row.children[0].innerHTML
+        let hidden = ''
+        if (row.hidden) hidden = 'hidden'
+        t += add + `<tr ${hidden}><td colspan=3 class="cZipped cfgNeutral">` + row.children[0].innerHTML
         add = ''
         continue
       }
