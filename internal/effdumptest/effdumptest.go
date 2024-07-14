@@ -277,6 +277,16 @@ func mkdump() (*effdump.Dump, error) {
 		run("diff")
 	}
 
+	group = "cmd-diffkeys"
+	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
+	run("diffkeys")
+	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
+	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	run("diffkeys")
+	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'even'.")
+	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	run("diffkeys", "even*")
+
 	group = "cmd-htmldiff"
 	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
 	run("htmldiff")

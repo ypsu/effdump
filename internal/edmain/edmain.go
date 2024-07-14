@@ -72,6 +72,7 @@ All subcommands:
 
 - clear: Delete this effdump's cache: all previously stored dumps and html reports in its temp dir.
 - diff: Print an unified diff between HEAD dump and the current version. Takes a list of key globs for filtering.
+- diffkeys: List all keys with a diff. Takes a list of key globs for filtering.
 - help: This usage string.
 - hash: Prints the hash of the dump. The hash includes the key names too.
 - htmldiff: Generate a HTML formatted diff between HEAD dump and the current version.
@@ -334,6 +335,22 @@ func (p *Params) Run(ctx context.Context) error {
 		_, err = io.WriteString(p.Stdout, fmtdiff.UnifiedBuckets(buckets, p.Sepch[0]))
 		if err != nil {
 			return fmt.Errorf("edmain/write unified diff: %v", err)
+		}
+		return nil
+	case "diffkeys":
+		buckets, err := p.diff()
+		if err != nil {
+			return fmt.Errorf("edmain/diff: %v", err)
+		}
+		if len(buckets) == 0 {
+			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
+			return nil
+		}
+		for i, bucket := range buckets {
+			fmt.Fprintf(p.Stdout, "bucket %d (%d diffs):\n", i+1, len(bucket.Entries))
+			for _, e := range bucket.Entries {
+				fmt.Fprintf(p.Stdout, "\t%s\n", e.Name)
+			}
 		}
 		return nil
 	case "hash":
