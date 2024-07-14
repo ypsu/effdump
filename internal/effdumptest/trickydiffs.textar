@@ -895,7 +895,7 @@
        user-select: none;
        width: 4ch;
      }
- 
+
      :root {
        --bg-neutral:   #ddd;
        --bg-notice:    #ffc;

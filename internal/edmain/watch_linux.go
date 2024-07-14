@@ -18,6 +18,13 @@ import (
 	"unsafe"
 )
 
+// isatty returns true iff stdout is a terminal.
+func isatty() bool {
+	var winsz [4]int16
+	_, _, err := syscall.Syscall(syscall.SYS_IOCTL, uintptr(os.Stdout.Fd()), uintptr(syscall.TIOCGWINSZ), uintptr(unsafe.Pointer(&winsz)))
+	return err == 0
+}
+
 // termsize() returns stderr's terminal size.
 // Returns 0, 0 on error.
 func termsize() (width, height int) {

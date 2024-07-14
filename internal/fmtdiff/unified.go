@@ -11,11 +11,11 @@ import (
 )
 
 // UnifiedBuckets formats a list of diff buckets into a textar.
-func UnifiedBuckets(buckets []Bucket, sepch byte) string {
+func UnifiedBuckets(buckets []Bucket, sepch byte, colorize bool) string {
 	var kvs []keyvalue.KV
 	for bucketid, bucket := range buckets {
 		e := bucket.Entries[0]
-		title, diff := fmt.Sprintf("%s (%s, bucket %d)", e.Name, e.Comment, bucketid+1), Unified(e.Diff)
+		title, diff := fmt.Sprintf("%s (%s, bucket %d)", e.Name, e.Comment, bucketid+1), Unified(e.Diff, colorize)
 		if diff != "" {
 			diff = "\t" + strings.ReplaceAll(diff, "\n", "\n\t")
 		}
@@ -41,18 +41,24 @@ func UnifiedBuckets(buckets []Bucket, sepch byte) string {
 }
 
 // Unified returns unified diff, suitable for terminal output.
-func Unified(d andiff.Diff) string {
+func Unified(d andiff.Diff, colorize bool) string {
+	var delColor, addColor, noticeColor, normalColor string
+	if colorize {
+		delColor, addColor = "\033[31m", "\033[32m"
+		noticeColor, normalColor = "\033[33m", "\033[0m"
+	}
 	ctx := 3
 	w := &strings.Builder{}
 	w.Grow(256)
 	x, y, xi, yi := d.LT, d.RT, 0, 0
 	for i, op := range d.Ops {
 		for xe := xi + op.Del; xi < xe; xi++ {
-			fmt.Fprintf(w, "-%s\n", x[xi])
+			fmt.Fprintf(w, "%s-%s%s\n", delColor, x[xi], normalColor)
 		}
 		for ye := yi + op.Add; yi < ye; yi++ {
-			fmt.Fprintf(w, "+%s\n", y[yi])
+			fmt.Fprintf(w, "%s+%s%s\n", addColor, y[yi], normalColor)
 		}
+		w.WriteString(normalColor)
 		pre, zipped, post := zip(op, i == len(d.Ops)-1, ctx)
 		for ye := yi + pre; yi < ye; xi, yi = xi+1, yi+1 {
 			fmt.Fprintf(w, " %s\n", y[yi])
@@ -62,11 +68,11 @@ func Unified(d andiff.Diff) string {
 			for k := 0; k < zipped; k++ {
 				hdr.improve(y[yi+k])
 			}
-			fmt.Fprintf(w, "@@ %d common lines @@%s\n", zipped, hdr.header(y[yi+zipped:]))
+			fmt.Fprintf(w, "%s@@ %d common lines @@%s%s\n", noticeColor, zipped, hdr.header(y[yi+zipped:]), normalColor)
 			xi, yi = xi+zipped, yi+zipped
 		}
 		for ye := yi + post; yi < ye; xi, yi = xi+1, yi+1 {
-			fmt.Fprintf(w, " %s\n", y[yi])
+			fmt.Fprintf(w, " %s%s\n", y[yi], normalColor)
 		}
 	}
 	return w.String()

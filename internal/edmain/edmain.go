@@ -54,6 +54,7 @@ type Params struct {
 	RMRegexp string
 
 	// Internal helper vars.
+	colorize   bool           // whether to colorize the terminal output
 	tmpdir     string         // the dir for storing this effdump's versions
 	version    string         // the baseline version of the source
 	dirty      bool           // whether the working dir is dirty
@@ -267,6 +268,11 @@ func (p *Params) Run(ctx context.Context) error {
 	if len(p.Sepch) != 1 {
 		return fmt.Errorf("edmain/sepch check: flag -sepch = %q, want a string of length 1", p.Sepch)
 	}
+	if p.Color == "auto" {
+		p.colorize = isatty()
+	} else if p.Color == "yes" {
+		p.colorize = true
+	}
 	p.tmpdir = filepath.Join(os.TempDir(), fmt.Sprintf("effdump-%d-%s", os.Getuid(), p.Name))
 	for _, e := range p.Env {
 		if dir, ok := strings.CutPrefix(e, "EFFDUMP_DIR="); ok {
@@ -274,6 +280,9 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 		if pid, ok := strings.CutPrefix(e, "EFFDUMP_WATCHERPID="); ok {
 			p.watcherpid = pid
+			if p.Color == "auto" {
+				p.colorize = true
+			}
 		}
 	}
 	p.dirty, err = p.VSHasChanges(ctx)
@@ -366,7 +375,7 @@ func (p *Params) Run(ctx context.Context) error {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
 			return nil
 		}
-		_, err = io.WriteString(p.Stdout, fmtdiff.UnifiedBuckets(buckets, p.Sepch[0]))
+		_, err = io.WriteString(p.Stdout, fmtdiff.UnifiedBuckets(buckets, p.Sepch[0], p.colorize))
 		if err != nil {
 			return fmt.Errorf("edmain/write unified diff: %v", err)
 		}

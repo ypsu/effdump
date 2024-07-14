@@ -117,7 +117,7 @@ func mkdump() (*effdump.Dump, error) {
 			fmt.Fprintf(w, "%+v\n", op)
 		}
 		kvs = append(kvs, keyvalue.KV{"diff", w.String()})
-		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff)})
+		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff, false)})
 		d.Add("diffs/"+name+".txt", textar.Format(kvs, '-'))
 		buckets := []fmtdiff.Bucket{{Entries: []fmtdiff.Entry{{Name: "html", Diff: diff}}}}
 		d.Add("diffs/"+name+".html", fmtdiff.HTMLBuckets(buckets))
@@ -148,6 +148,7 @@ func mkdump() (*effdump.Dump, error) {
 		kvs[0] = keyvalue.KV{"desc", fmt.Sprintf("%s\n\nargs: testdump %q", desc, args)}
 		fs := flag.NewFlagSet("effdumptest", flag.ContinueOnError)
 		p.RegisterFlags(fs)
+		p.Color = "no"
 		if err := fs.Parse(args); err != nil {
 			kvs = append(kvs, keyvalue.KV{"flagparse-error", err.Error()})
 		}
@@ -246,6 +247,9 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("changed-with-template", "This is a rename example with a -template flag.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("-template=odd", "diff", "prime*")
+	setdesc("changed-with-color", "Diffing base against changed but with colorization enabled.")
+	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	run("-color=yes", "diff")
 	setdesc("changed-rmall", "Diffing base against changed with a .* removal regex.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("-x=.*", "diff")
