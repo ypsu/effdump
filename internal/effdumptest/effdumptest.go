@@ -205,6 +205,19 @@ func mkdump() (*effdump.Dump, error) {
 	p.Effects = append(p.Effects, keyvalue.KV{"all", "another all entry"})
 	run("print")
 
+	group = "cmd-htmlprint"
+	setdesc("no-args", "Printing without args should print all the effects.")
+	run("htmlprint")
+	setdesc("two-args", "Printing without args should print only the even and odd effects.")
+	run("htmlprint", "even", "odd")
+	setdesc("oddglob-arg", "Printing without args should print all effects starting with 'o*'.")
+	run("htmlprint", "odd*")
+	setdesc("glob-arg", "Printing without args should print all effects containing 'o'.")
+	run("htmlprint", "*o*")
+	setdesc("dup-error", "There's a duplicate entry added in this one.")
+	p.Effects = append(p.Effects, keyvalue.KV{"all", "another all entry"})
+	run("htmlprint")
+
 	group = "cmd-keys"
 	setdesc("no-args", "Printing without args should print all the keys.")
 	run("keys")

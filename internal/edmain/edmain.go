@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"hash/fnv"
+	"html"
 	"io"
 	"net"
 	"net/http"
@@ -25,6 +26,8 @@ import (
 	"github.com/ypsu/effdump/internal/fmtdiff"
 	"github.com/ypsu/effdump/internal/keyvalue"
 	"github.com/ypsu/effdump/internal/textar"
+
+	_ "embed"
 )
 
 // Params contains most of the I/O dependencies for the Run().
@@ -75,12 +78,13 @@ All subcommands:
 - diffkeys: List all keys with a diff. Takes a list of key globs for filtering.
 - help: This usage string.
 - hash: Prints the hash of the dump. The hash includes the key names too.
-- htmldiff: Generate a HTML formatted diff between HEAD dump and the current version.
+- htmldiff: Generate a HTML formatted diff between HEAD dump and the current version. Takes a list of key globs for filtering.
+- htmlprint: Similar to print but in HTML form.
 - keys: Print the list of keys the dump has.
 - print: Print the dump to stdout. Takes a list of key globs for filtering.
 - printraw: Print one effect to stdout without any decoration. Needs one argument for the key.
 - save: Save the current version of the dump to the temp dir.
-- webdiff: Serve the HTML formatted diff between HEAD dump and the current version.
+- webdiff: Serve the HTML formatted diff between HEAD dump and the current version. Takes a list of key globs for filtering.
 - webprintraw: Same as printraw but serves it over HTTP.
 
 Key globs: * is replaced with arbitrary number of characters. "hello" matches the glob "*o*".
@@ -218,6 +222,21 @@ func (p *Params) diff() ([]fmtdiff.Bucket, error) {
 	}
 	slices.SortFunc(buckets, func(a, b fmtdiff.Bucket) int { return cmp.Compare(a.Entries[0].Name, b.Entries[0].Name) })
 	return buckets, nil
+}
+
+//go:embed printheader.html
+var printheaderHTML string
+
+func (p *Params) htmlprint() string {
+	w := &strings.Builder{}
+	w.Grow(1 << 16)
+	w.WriteString(printheaderHTML)
+	for _, kv := range p.Effects {
+		k, v := html.EscapeString(kv.K), html.EscapeString(kv.V)
+		fmt.Fprintf(w, "<details open><summary>%s</summary>\n<pre>%s</pre></details>\n<hr>\n", k, v)
+	}
+	w.WriteString("</body>")
+	return w.String()
 }
 
 func (p *Params) subkeyize(kvs []keyvalue.KV) {
@@ -376,6 +395,9 @@ func (p *Params) Run(ctx context.Context) error {
 			return fmt.Errorf("edmain/htmldiff: %v", err)
 		}
 		return nil
+	case "htmlprint":
+		io.WriteString(p.Stdout, p.htmlprint())
+		return nil
 	case "keys":
 		for _, e := range p.Effects {
 			fmt.Fprintln(p.Stdout, e.K)
@@ -414,6 +436,8 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 		html := fmtdiff.HTMLBuckets(buckets)
 		return p.serve(ctx, html)
+	case "webprint":
+		return p.serve(ctx, p.htmlprint())
 	case "webprintraw":
 		if len(args) != 1 {
 			return fmt.Errorf("edmain/printraw: got %d args, want 1", len(args))
