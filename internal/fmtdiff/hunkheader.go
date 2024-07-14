@@ -30,7 +30,7 @@ func countIndent(s string) int {
 
 func (h *hunkheader) improve(s string) {
 	trimmed := strings.TrimSpace(s)
-	if trimmed == "" || !unicode.IsLetter(rune(trimmed[0])) {
+	if len(trimmed) <= 2 || !(unicode.IsLetter(rune(trimmed[0])) || unicode.IsLetter(rune(trimmed[1]))) {
 		h.inrun = false
 		return
 	}
