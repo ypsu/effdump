@@ -14,6 +14,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"runtime/debug"
 	"slices"
 	"strings"
 	"time"
@@ -130,6 +131,22 @@ func (p *Params) cmdSave(_ context.Context) error {
 
 	if err := os.MkdirAll(p.tmpdir, 0o755); err != nil {
 		return fmt.Errorf("edmain/make dump dir: %v", err)
+	}
+	readme := filepath.Join(p.tmpdir, "README")
+	if _, err := os.Stat(readme); err != nil {
+		content := `This is the effdump directory for %s.
+More info about effdump at https://github.com/ypsu/effdump.
+These files are used during development to inspect diffs.
+They can be deleted because they can be easily regenerated.
+effdump relies on a tmp reaper daemon to keep the number of files limited.
+You have that set up, right?
+Otherwise just run this regularly:
+
+	go run %q clear
+`
+		bi, _ := debug.ReadBuildInfo()
+		contentBytes := fmt.Appendf(nil, content, bi.Path, bi.Path)
+		os.WriteFile(readme, contentBytes, 0644) // ignore error, don't care for this readme
 	}
 
 	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
@@ -296,7 +313,7 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 		var deletedFiles int
 		files, _ := filepath.Glob(filepath.Join(p.tmpdir, "*.gz"))
-		for _, f := range files {
+		for _, f := range append(files, "README") {
 			if os.Remove(f) == nil { // on success
 				edbg.Printf("Deleted %s.\n", filepath.Base(f))
 				deletedFiles++

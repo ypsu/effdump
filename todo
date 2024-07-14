@@ -1,5 +1,4 @@
 - edmain: add a diffkeys subcommand to list all keys with diffs to avoid the need for a new flag to control when "(xx more entries)" is displayed
-- edmain: add a README to the tmpdir similar to /tmp/cache/go-build/README
 - edmain: implement webprint; just something barebones because terminals can be awkward for large output
 - unidiff: colorize output; -color is by default true iff os.Stdout is terminal or -watcherPID is set
 - examples: add a markdown example too
