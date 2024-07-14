@@ -120,7 +120,12 @@ func HTMLBuckets(buckets []Bucket) string {
 				}
 				if zipped > 0 {
 					printf("    <tr>\n")
-					printf("      <td class='cZipped cfgNeutral' colspan=4><button title=Expand onclick=expand(event)>&nbsp;↕&nbsp;</button> @@ %d common lines @@</td>\n", zipped)
+					hdr := hunkheader{}
+					for k := 0; k < zipped; k++ {
+						hdr.improve(y[yi+k])
+					}
+					hdrs := html.EscapeString(hdr.header(y[yi+zipped:]))
+					printf("      <td class='cZipped cfgNeutral' colspan=4><button title=Expand onclick=expand(event)>&nbsp;↕&nbsp;</button> @@ %d common lines @@%s</td>\n", zipped, hdrs)
 					for i, k := 0, zipped; i < k; i++ {
 						printf("    <tr hidden>\n")
 						printf("      <td class=cNum>%d</td>\n", xi+1)

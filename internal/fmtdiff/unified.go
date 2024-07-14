@@ -58,7 +58,11 @@ func Unified(d andiff.Diff) string {
 			fmt.Fprintf(w, " %s\n", y[yi])
 		}
 		if zipped > 0 {
-			fmt.Fprintf(w, "@@ %d common lines @@\n", zipped)
+			hdr := hunkheader{}
+			for k := 0; k < zipped; k++ {
+				hdr.improve(y[yi+k])
+			}
+			fmt.Fprintf(w, "@@ %d common lines @@%s\n", zipped, hdr.header(y[yi+zipped:]))
 			xi, yi = xi+zipped, yi+zipped
 		}
 		for ye := yi + post; yi < ye; xi, yi = xi+1, yi+1 {

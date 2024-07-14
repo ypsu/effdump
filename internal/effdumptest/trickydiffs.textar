@@ -711,7 +711,10 @@
 === 40
  func fn(arg int) {
    // some comment.
-   some calculation.
+   some calculation1.
+   some calculation2.
+   some calculation3.
+   some calculation4.
 
 +  // moar comments.
 +  moar calculations.
@@ -784,6 +787,72 @@
 +    func3()
 +  }
  }
+
+=== 46
+ {
+   {
+     subobject = "x"
+   }
+
+   name = "obj a"
+   value = "a's value"
+
+   {
+     {
+       subsubobject = "y"
+     }
+     name = "subobj y"
+     value = "y's value"
+   }
+
++  {
++    {
++      subsubobject = "z"
++    }
++
++    name = "subobj z"
++    value = "z's value"
++  }
++
+ {
+   {
+     subobject = "x"
+   }
+
+   name = "obj c"
+   value = "c's value"
+ }
+
+=== 47
+ Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor
+ incididunt ut labore et dolore magna aliqua. Facilisis leo vel fringilla est
+ ullamcorper eget nulla facilisi. Tellus cras adipiscing enim eu turpis egestas.
+ Id semper risus in hendrerit gravida rutrum quisque. Vitae purus faucibus
+ ornare suspendisse sed nisi lacus. Consectetur lorem donec massa sapien
+ faucibus et molestie ac feugiat. Etiam tempor orci eu lobortis elementum.
+ Bibendum est ultricies integer quis. Aliquet bibendum enim facilisis gravida
+ neque convallis. Etiam tempor orci eu lobortis elementum. Porta non pulvinar
+ neque laoreet suspendisse interdum consectetur. Morbi non arcu risus quis
+ varius. Mauris cursus mattis molestie a iaculis at erat.
+
+ Sed arcu non odio euismod lacinia at quis. Feugiat in ante metus dictum.
+ Eleifend quam adipiscing vitae proin sagittis nisl. Accumsan tortor posuere ac
+ ut consequat semper viverra nam libero. Pharetra magna ac placerat vestibulum
+ lectus mauris. Ut eu sem integer vitae justo eget magna fermentum iaculis. Non
+ blandit massa enim nec dui. Sit amet consectetur adipiscing elit. Fames ac
+ turpis egestas sed. Purus in massa tempor nec. Urna porttitor rhoncus dolor
+ purus non enim praesent elementum. Consequat id porta nibh venenatis cras sed.
+ Viverra tellus in hac habitasse. Imperdiet dui accumsan sit amet nulla.
+-Pulvinar elementum integer enim neque volutpat ac tincidunt vitae semper.
++Pulvinar elementum integer enim neque volutpat ac tincidunt vitae semper [x].
+ Fermentum et sollicitudin ac orci phasellus egestas tellus.
+
+ Scelerisque purus semper eget duis at tellus at urna. Ac odio tempor orci
+ dapibus ultrices in. Nibh praesent tristique magna sit. Feugiat in fermentum
+ posuere urna nec. Sed risus ultricies tristique nulla aliquet. Quis hendrerit
+ dolor magna eget. Parturient montes nascetur ridiculus mus mauris vitae
+ ultricies leo integer. Morbi tristique senectus et netus. Nibh sed pulvinar
+ proin gravida. Orci nulla pellentesque dignissim enim sit amet venenatis urna.
 
 === 50
  a
