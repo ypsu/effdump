@@ -123,7 +123,7 @@ func Compute(lt, rt string, rmregexp *regexp.Regexp) Diff {
 		// This improves a few more edge cases without adding much complexity.
 		for txi, tyi := xi, yi; txi < nxi && tyi < nyi; txi, tyi = txi+1, tyi+1 {
 			same := 0
-			for x[txi+same] == y[tyi+same] {
+			for txi+same < nxi && tyi+same < nyi && x[txi+same] == y[tyi+same] {
 				same++
 			}
 			if same > 0 {
