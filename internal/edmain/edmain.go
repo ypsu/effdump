@@ -48,6 +48,7 @@ type Params struct {
 	Revision string
 	Sepch    string
 	Subkey   string
+	Template string
 	Version  string
 	Watch    bool
 	RMRegexp string
@@ -58,6 +59,7 @@ type Params struct {
 	dirty      bool           // whether the working dir is dirty
 	filter     *regexp.Regexp // the entries to print or diff
 	rmregexp   *regexp.Regexp // the removal regexp
+	template   string         // the template value for new values
 	watcherpid string         // parent -watch process PID, if one is running
 }
 
@@ -108,6 +110,7 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.Subkey, "subkey", "",
 		"Parse each value as a textar, pick subkey's value, and then operate on that section only.\n"+
 			"Especially useful for printraw to print a portion of the result.")
+	fs.StringVar(&p.Template, "template", "", "Use this key's value as the template for new entries.")
 	fs.StringVar(&p.Version, "version", "",
 		"Use this as the given version name.\n"+
 			"The difference to -rev is that this doesn't try resolve this through the version control system.\n"+
@@ -205,7 +208,7 @@ func (p *Params) diff() ([]fmtdiff.Bucket, error) {
 			e = fmtdiff.Entry{lt[0].K, "deleted", andiff.Compute(lt[0].V, "", p.rmregexp)}
 			lt, n = lt[1:], n+1
 		case len(lt) == 0 || len(rt) > 0 && lt[0].K > rt[0].K:
-			e = fmtdiff.Entry{rt[0].K, "added", andiff.Compute("", rt[0].V, p.rmregexp)}
+			e = fmtdiff.Entry{rt[0].K, "added", andiff.Compute(p.template, rt[0].V, p.rmregexp)}
 			rt, n = rt[1:], n+1
 		case lt[0].K == rt[0].K && lt[0].V == rt[0].V:
 			lt, rt = lt[1:], rt[1:]
@@ -292,6 +295,18 @@ func (p *Params) Run(ctx context.Context) error {
 		p.rmregexp, err = regexp.Compile(p.RMRegexp)
 		if err != nil {
 			return fmt.Errorf("edmain/compile -x regexp: %v", err)
+		}
+	}
+	if p.Template != "" {
+		found := false
+		for _, kv := range p.Effects {
+			if kv.K == p.Template {
+				found, p.template = true, kv.V
+				break
+			}
+		}
+		if !found {
+			return fmt.Errorf("edmain/find template %q: key not found", p.Template)
 		}
 	}
 
