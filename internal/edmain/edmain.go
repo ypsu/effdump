@@ -296,8 +296,7 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 		var deletedFiles int
 		files, _ := filepath.Glob(filepath.Join(p.tmpdir, "*.gz"))
-		htmlFiles, _ := filepath.Glob(filepath.Join(p.tmpdir, "*.html"))
-		for _, f := range append(files, htmlFiles...) {
+		for _, f := range files {
 			if os.Remove(f) == nil { // on success
 				edbg.Printf("Deleted %s.\n", filepath.Base(f))
 				deletedFiles++
