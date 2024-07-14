@@ -117,10 +117,10 @@ func mkdump() (*effdump.Dump, error) {
 			fmt.Fprintf(w, "%+v\n", op)
 		}
 		kvs = append(kvs, keyvalue.KV{"diff", w.String()})
-		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff, false)})
+		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff, 3, false)})
 		d.Add("diffs/"+name+".txt", textar.Format(kvs, '-'))
 		buckets := []fmtdiff.Bucket{{Entries: []fmtdiff.Entry{{Name: "html", Diff: diff}}}}
-		d.Add("diffs/"+name+".html", fmtdiff.HTMLBuckets(buckets))
+		d.Add("diffs/"+name+".html", fmtdiff.HTMLBuckets(buckets, 3))
 	}
 
 	// Set up common helpers for the CLI tests.
@@ -244,6 +244,9 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("diff")
+	setdesc("changed-no-context", "Diffing without context.")
+	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	run("-context=0", "diff")
 	setdesc("changed-with-template", "This is a rename example with a -template flag.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("-template=odd", "diff", "prime*")
@@ -313,6 +316,9 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("htmldiff")
+	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	setdesc("changed-no-context", "Diffing without context.")
+	run("-context=0", "htmldiff")
 	setdesc("changed-rmall", "Diffing base against changed with a .* removal regex.")
 	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
 	run("-x=.*", "htmldiff")

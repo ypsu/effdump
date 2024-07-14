@@ -11,11 +11,11 @@ import (
 )
 
 // UnifiedBuckets formats a list of diff buckets into a textar.
-func UnifiedBuckets(buckets []Bucket, sepch byte, colorize bool) string {
+func UnifiedBuckets(buckets []Bucket, sepch byte, contextLines int, colorize bool) string {
 	var kvs []keyvalue.KV
 	for bucketid, bucket := range buckets {
 		e := bucket.Entries[0]
-		title, diff := fmt.Sprintf("%s (%s, bucket %d)", e.Name, e.Comment, bucketid+1), Unified(e.Diff, colorize)
+		title, diff := fmt.Sprintf("%s (%s, bucket %d)", e.Name, e.Comment, bucketid+1), Unified(e.Diff, contextLines, colorize)
 		if diff != "" {
 			diff = "\t" + strings.ReplaceAll(diff, "\n", "\n\t")
 		}
@@ -41,13 +41,12 @@ func UnifiedBuckets(buckets []Bucket, sepch byte, colorize bool) string {
 }
 
 // Unified returns unified diff, suitable for terminal output.
-func Unified(d andiff.Diff, colorize bool) string {
+func Unified(d andiff.Diff, contextLines int, colorize bool) string {
 	var delColor, addColor, noticeColor, normalColor string
 	if colorize {
 		delColor, addColor = "\033[31m", "\033[32m"
 		noticeColor, normalColor = "\033[33m", "\033[0m"
 	}
-	ctx := 3
 	w := &strings.Builder{}
 	w.Grow(256)
 	x, y, xi, yi := d.LT, d.RT, 0, 0
@@ -59,7 +58,7 @@ func Unified(d andiff.Diff, colorize bool) string {
 			fmt.Fprintf(w, "%s+%s%s\n", addColor, y[yi], normalColor)
 		}
 		w.WriteString(normalColor)
-		pre, zipped, post := zip(op, i == len(d.Ops)-1, ctx)
+		pre, zipped, post := zip(op, i == len(d.Ops)-1, contextLines)
 		for ye := yi + pre; yi < ye; xi, yi = xi+1, yi+1 {
 			fmt.Fprintf(w, " %s\n", y[yi])
 		}

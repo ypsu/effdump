@@ -42,16 +42,17 @@ type Params struct {
 	VSResolve    func(ctx context.Context, revision string) (version string, err error)
 
 	// Flags. Must be parsed by the caller after RegisterFlags.
-	Address  string
-	Color    string
-	Force    bool
-	Revision string
-	Sepch    string
-	Subkey   string
-	Template string
-	Version  string
-	Watch    bool
-	RMRegexp string
+	Address      string
+	Color        string
+	ContextLines int
+	Force        bool
+	Revision     string
+	Sepch        string
+	Subkey       string
+	Template     string
+	Version      string
+	Watch        bool
+	RMRegexp     string
 
 	// Internal helper vars.
 	colorize   bool           // whether to colorize the terminal output
@@ -105,6 +106,7 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.Usage = p.Usage
 	fs.StringVar(&p.Address, "address", ":8080", "The address to serve webdiff on.")
 	fs.StringVar(&p.Color, "color", "auto", "Whether to colorize the output. Valid values: auto|yes|no.")
+	fs.IntVar(&p.ContextLines, "context", 3, "Print this amount of diff context.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
 	fs.StringVar(&p.Revision, "rev", "", "Use a given revision's name as the version. Defaults to HEAD revision.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
@@ -318,6 +320,9 @@ func (p *Params) Run(ctx context.Context) error {
 			return fmt.Errorf("edmain/find template %q: key not found", p.Template)
 		}
 	}
+	if p.ContextLines < 0 || p.ContextLines > 1<<20 {
+		return fmt.Errorf("edmain/check context arg: %d is out of bounds", p.ContextLines)
+	}
 
 	var subcommand string
 	var args []string
@@ -375,7 +380,7 @@ func (p *Params) Run(ctx context.Context) error {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
 			return nil
 		}
-		_, err = io.WriteString(p.Stdout, fmtdiff.UnifiedBuckets(buckets, p.Sepch[0], p.colorize))
+		_, err = io.WriteString(p.Stdout, fmtdiff.UnifiedBuckets(buckets, p.Sepch[0], p.ContextLines, p.colorize))
 		if err != nil {
 			return fmt.Errorf("edmain/write unified diff: %v", err)
 		}
@@ -414,7 +419,7 @@ func (p *Params) Run(ctx context.Context) error {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
 			return nil
 		}
-		html := fmtdiff.HTMLBuckets(buckets)
+		html := fmtdiff.HTMLBuckets(buckets, p.ContextLines)
 		if _, err := io.WriteString(p.Stdout, html); err != nil {
 			return fmt.Errorf("edmain/htmldiff: %v", err)
 		}
@@ -458,7 +463,7 @@ func (p *Params) Run(ctx context.Context) error {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
 			return nil
 		}
-		html := fmtdiff.HTMLBuckets(buckets)
+		html := fmtdiff.HTMLBuckets(buckets, p.ContextLines)
 		return p.serve(ctx, html)
 	case "webprint":
 		return p.serve(ctx, p.htmlprint())

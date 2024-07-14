@@ -42,8 +42,7 @@ func zip(op andiff.Op, last bool, contextLines int) (pre, zipped, post int) {
 }
 
 // HTMLBuckets formats a list of diff buckets into a HTML document.
-func HTMLBuckets(buckets []Bucket) string {
-	contextLines := 3
+func HTMLBuckets(buckets []Bucket, contextLines int) string {
 	w := &strings.Builder{}
 	w.Grow(1 << 20)
 	printf := func(format string, args ...any) { fmt.Fprintf(w, format, args...) }
