@@ -1,3 +1,4 @@
 - unidiff: colorize output; -color is by default true iff os.Stdout is terminal or -watcherPID is set
+- edmain: make context size configurable
 - examples: add a markdown example too
 - html: add expand buttons
