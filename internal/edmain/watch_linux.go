@@ -73,13 +73,16 @@ func fittedPrint(s []byte) {
 	fmt.Fprintf(os.Stderr, "\033[H\033[J%s\n", msg)
 }
 
-// startcmd starts command and returns its output after it exited or sent us SIGUSR1, whichever happens sooner.
+// startcmd starts command and returns its output.
 // The resulting subprocess must be collected via the returned kill command.
-func startcmd(argv []string, env []string) (output []byte, kill func()) {
-	donesig := make(chan os.Signal, 2)
-	signal.Notify(donesig, syscall.SIGUSR1)
-	defer signal.Stop(donesig)
+// It first compiles the command into edbin and then runs it with the specified args.
+func startcmd(gobin, edpkg, edbin string, argv []string, env []string) (output []byte, kill func()) {
+	compilerOutput, err := exec.Command(gobin, "build", "-o="+edbin, edpkg).CombinedOutput()
+	if err != nil {
+		return compilerOutput, func() {}
+	}
 
+	fmt.Fprintf(os.Stderr, "running... ")
 	pr, pw, err := os.Pipe()
 	if err != nil {
 		return fmt.Appendf(nil, "ERROR: effdump: create pipe for subprocess output: %v.\n", err), func() {}
@@ -93,7 +96,7 @@ func startcmd(argv []string, env []string) (output []byte, kill func()) {
 		close(iodone)
 	}()
 
-	process, err := os.StartProcess(argv[0], argv, &os.ProcAttr{
+	process, err := os.StartProcess(edbin, argv, &os.ProcAttr{
 		Env:   env,
 		Files: []*os.File{nil, pw, pw},
 		Sys:   &syscall.SysProcAttr{Setpgid: true},
@@ -102,28 +105,13 @@ func startcmd(argv []string, env []string) (output []byte, kill func()) {
 		return fmt.Appendf(nil, "ERROR: effdump: start subprocess: %v.\n", err), func() {}
 	}
 	pw.Close()
-	go func() {
-		process.Wait()
-		donesig <- syscall.SIGUSR1
-	}()
-
-	select {
-	case <-donesig:
-		// Await child to finish / mark output finished with SIGUSR1 + some grace time for IO to finish copying.
-		// This is needed because effdump could run indefinitely in case web serving (e.g. webdiff) was requested.
-		// Note that there are multiple children ("go run" and its child, the effdump binary).
-		// So it's not possible for the effdump binary to close pw after it started serving http and have pr unblock; the go run will keep pw open.
-		// Work around this via this signaling.
-		pr.SetReadDeadline(time.Now().Add(100 * time.Millisecond))
-	case <-iodone:
-	}
 	<-iodone
 
 	if !bytes.HasSuffix(buf.Bytes(), []byte("\n")) {
 		buf.WriteByte('\n')
 	}
 	return buf.Bytes(), func() {
-		syscall.Kill(-process.Pid, syscall.SIGTERM)
+		syscall.Kill(-process.Pid, syscall.SIGINT)
 		process.Wait()
 	}
 }
@@ -211,8 +199,8 @@ func (p *Params) watch(ctx context.Context) error {
 	if err != nil {
 		return fmt.Errorf("edmain/find go binary: %v", err)
 	}
-	argv := append([]string{gobin, "run", bi.Path}, os.Args[1:]...)
-	env := append(os.Environ(), "EFFDUMP_WATCHERPID="+strconv.Itoa(os.Getpid()))
+	edbin := filepath.Join(p.tmpdir, "effdump")
+	env := append(p.Env, "EFFDUMP_WATCHERPID="+strconv.Itoa(os.Getpid()))
 
 	sigch := make(chan os.Signal, 1)
 	signal.Notify(sigch, syscall.SIGINT)
@@ -221,8 +209,8 @@ func (p *Params) watch(ctx context.Context) error {
 	go reportchanges(fsch)
 
 	for ctx.Err() == nil {
-		fmt.Fprintf(os.Stderr, "running...")
-		output, kill := startcmd(argv, env)
+		fmt.Fprintf(os.Stderr, "compiling... ")
+		output, kill := startcmd(gobin, bi.Path, edbin, os.Args[1:], env)
 		fittedPrint(output)
 		select {
 		case <-fsch:
@@ -241,9 +229,6 @@ func (p *Params) watch(ctx context.Context) error {
 }
 
 func (p *Params) notifyWatcher() {
-	pid, err := strconv.Atoi(p.watcherpid)
-	if err != nil || pid <= 0 {
-		return
-	}
-	syscall.Kill(pid, syscall.SIGUSR1)
+	os.Stdout.Close()
+	os.Stderr.Close()
 }
