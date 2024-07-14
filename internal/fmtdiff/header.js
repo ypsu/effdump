@@ -5,6 +5,14 @@ function expand(evt) {
   for (n = n.nextSibling; n != null && n.hidden; n = n.nextSibling) n.hidden = false
 }
 
+// expandall expands all zipped diff parts.
+function expandall(evt) {
+  evt.target.hidden = true
+  for (let td of document.querySelectorAll('.cZipped button')) expand({
+    target: td
+  })
+}
+
 // unify converts the split diff into unified diff.
 function unify(evt) {
   evt.target.hidden = true
@@ -52,10 +60,12 @@ function selectSide(toenable, todisable) {
   // Clear selection to avoid spurious drag events.
   window.getSelection().empty()
 }
+
 function handleclick(evt) {
   if (evt.target.classList.contains('cRight')) selectSide(hRightSelect, hLeftSelect)
   if (evt.target.classList.contains('cLeft')) selectSide(hLeftSelect, hRightSelect)
 }
+
 hLeftSelect.disabled = true
 hRightSelect.disabled = true
 selectSide(hRightSelect, hLeftSelect)
