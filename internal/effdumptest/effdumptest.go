@@ -120,7 +120,7 @@ func mkdump() (*effdump.Dump, error) {
 		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff, 3, false)})
 		d.Add("diffs/"+name+".txt", textar.Format(kvs, '-'))
 		buckets := []fmtdiff.Bucket{{Entries: []fmtdiff.Entry{{Name: "html", Diff: diff}}}}
-		d.Add("diffs/"+name+".html", fmtdiff.HTMLBuckets(buckets, 3))
+		d.Add("diffs/"+name+".html", fmtdiff.HTMLBuckets(buckets, nil, 3))
 	}
 
 	// Set up common helpers for the CLI tests.

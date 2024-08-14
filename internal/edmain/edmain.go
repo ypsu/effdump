@@ -182,22 +182,22 @@ Otherwise just run this regularly:
 }
 
 // diff diffs the current version against the baseline and records the diffs.
-func (p *Params) diff() ([]fmtdiff.Bucket, error) {
+func (p *Params) diff() (buckets []fmtdiff.Bucket, unchanged []string, err error) {
 	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
 	buf, err := os.ReadFile(fname)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return nil, fmt.Errorf("edmain/load dump: effdump for commit %v not found, git stash and save that version first", p.version)
+		return nil, nil, fmt.Errorf("edmain/load dump: effdump for commit %v not found, git stash and save that version first", p.version)
 	}
 	if err != nil {
-		return nil, fmt.Errorf("edmain/load dump: %v", err)
+		return nil, nil, fmt.Errorf("edmain/load dump: %v", err)
 	}
 	lt, err := Uncompress(buf)
 	if err != nil {
-		return nil, fmt.Errorf("edmain/unmarshal dump: %v", err)
+		return nil, nil, fmt.Errorf("edmain/unmarshal dump: %v", err)
 	}
 	for i := 1; i < len(lt); i++ {
 		if lt[i].K <= lt[i-1].K {
-			return nil, fmt.Errorf("edmain/sort check of %s: %dth key not in order (corrupted? re-save the version)", p.version, i)
+			return nil, nil, fmt.Errorf("edmain/sort check of %s: %dth key not in order (corrupted? re-save the version)", p.version, i)
 		}
 	}
 	lt = slices.DeleteFunc(lt, func(kv keyvalue.KV) bool { return !p.filter.MatchString(kv.K) })
@@ -214,7 +214,7 @@ func (p *Params) diff() ([]fmtdiff.Bucket, error) {
 			e = fmtdiff.Entry{rt[0].K, "added", andiff.Compute(p.template, rt[0].V, p.rmregexp)}
 			rt, n = rt[1:], n+1
 		case lt[0].K == rt[0].K && lt[0].V == rt[0].V:
-			lt, rt = lt[1:], rt[1:]
+			lt, rt, unchanged = lt[1:], rt[1:], append(unchanged, lt[0].K)
 			continue
 		default:
 			e = fmtdiff.Entry{lt[0].K, "changed", andiff.Compute(lt[0].V, rt[0].V, p.rmregexp)}
@@ -227,7 +227,7 @@ func (p *Params) diff() ([]fmtdiff.Bucket, error) {
 		buckets[idx].Entries = append(buckets[idx].Entries, e)
 	}
 	slices.SortFunc(buckets, func(a, b fmtdiff.Bucket) int { return cmp.Compare(a.Entries[0].Name, b.Entries[0].Name) })
-	return buckets, nil
+	return buckets, unchanged, nil
 }
 
 //go:embed printheader.html
@@ -372,7 +372,7 @@ func (p *Params) Run(ctx context.Context) error {
 		fmt.Fprintf(p.Stdout, "Removed %d files from %s.\n", deletedFiles, p.tmpdir)
 		return nil
 	case "diff":
-		buckets, err := p.diff()
+		buckets, _, err := p.diff()
 		if err != nil {
 			return fmt.Errorf("edmain/diff: %v", err)
 		}
@@ -386,7 +386,7 @@ func (p *Params) Run(ctx context.Context) error {
 		}
 		return nil
 	case "diffkeys":
-		buckets, err := p.diff()
+		buckets, _, err := p.diff()
 		if err != nil {
 			return fmt.Errorf("edmain/diff: %v", err)
 		}
@@ -411,7 +411,7 @@ func (p *Params) Run(ctx context.Context) error {
 		p.Usage()
 		return nil
 	case "htmldiff":
-		buckets, err := p.diff()
+		buckets, unchanged, err := p.diff()
 		if err != nil {
 			return fmt.Errorf("edmain/htmldiff: %v", err)
 		}
@@ -419,7 +419,7 @@ func (p *Params) Run(ctx context.Context) error {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
 			return nil
 		}
-		html := fmtdiff.HTMLBuckets(buckets, p.ContextLines)
+		html := fmtdiff.HTMLBuckets(buckets, unchanged, p.ContextLines)
 		if _, err := io.WriteString(p.Stdout, html); err != nil {
 			return fmt.Errorf("edmain/htmldiff: %v", err)
 		}
@@ -455,7 +455,7 @@ func (p *Params) Run(ctx context.Context) error {
 	case "save":
 		return p.cmdSave(ctx)
 	case "webdiff":
-		buckets, err := p.diff()
+		buckets, unchanged, err := p.diff()
 		if err != nil {
 			return fmt.Errorf("edmain/webdiff: %v", err)
 		}
@@ -463,7 +463,7 @@ func (p *Params) Run(ctx context.Context) error {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
 			return nil
 		}
-		html := fmtdiff.HTMLBuckets(buckets, p.ContextLines)
+		html := fmtdiff.HTMLBuckets(buckets, unchanged, p.ContextLines)
 		return p.serve(ctx, html)
 	case "webprint":
 		return p.serve(ctx, p.htmlprint())

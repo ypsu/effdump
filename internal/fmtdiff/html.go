@@ -42,7 +42,7 @@ func zip(op andiff.Op, last bool, contextLines int) (pre, zipped, post int) {
 }
 
 // HTMLBuckets formats a list of diff buckets into a HTML document.
-func HTMLBuckets(buckets []Bucket, contextLines int) string {
+func HTMLBuckets(buckets []Bucket, unchanged []string, contextLines int) string {
 	w := &strings.Builder{}
 	w.Grow(1 << 20)
 	printf := func(format string, args ...any) { fmt.Fprintf(w, format, args...) }
@@ -150,6 +150,16 @@ func HTMLBuckets(buckets []Bucket, contextLines int) string {
 			printf("  </details>\n")
 		}
 		printf("</ul>\n<hr>\n\n")
+	}
+
+	if len(unchanged) == 0 {
+		printf("<p>no unchanged keys</p>")
+	} else {
+		printf("<details><summary>%d unchanged keys</summary><ul>\n", len(unchanged))
+		for _, k := range unchanged {
+			printf("  <li>%s\n", html.EscapeString(k))
+		}
+		printf("</ul></details>")
 	}
 
 	printf("\n</body>\n</html>\n")
