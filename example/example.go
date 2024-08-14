@@ -61,7 +61,7 @@ func seq(seq ...func(*config)) func(*config) {
 }
 
 func run() error {
-	d := effdump.New("example-deployment-config")
+	d := effdump.New("exampledeployment")
 
 	// add computes and saves deployment config based on a list of config overrides.
 	add := func(name string, overrides ...func(*config)) {
