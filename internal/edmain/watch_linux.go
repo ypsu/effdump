@@ -194,6 +194,9 @@ func (p *Params) watch(ctx context.Context) error {
 	if !ok {
 		return fmt.Errorf("edmain/watch: couldn't fetch buildinfo")
 	}
+	if bi.Path == "command-line-arguments" {
+		return fmt.Errorf("edmain/check target: go run target must be of form yourmodule/yourpackage, specifying .go files directly is not supported")
+	}
 
 	gobin, err := exec.LookPath("go")
 	if err != nil {
