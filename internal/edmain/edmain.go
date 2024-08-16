@@ -349,7 +349,13 @@ func (p *Params) Run(ctx context.Context) error {
 			return fmt.Errorf("edmain/unique check: key %q duplicated", p.Effects[i].K)
 		}
 	}
-	p.subkeyize(p.Effects)
+	if p.Subkey != "" {
+		if subcommand == "save" {
+			fmt.Fprintln(p.Stdout, `NOTE: ignoring -subkey for the "save" subcommand.`)
+		} else {
+			p.subkeyize(p.Effects)
+		}
+	}
 
 	if p.Watch && p.watcherpid == "" {
 		return p.watch(ctx)
