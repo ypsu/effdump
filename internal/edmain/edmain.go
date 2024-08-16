@@ -251,7 +251,7 @@ func (p *Params) subkeyize(kvs []keyvalue.KV) {
 	}
 	subkvs := make([]keyvalue.KV, 0, 4)
 	for i, e := range kvs {
-		subkvs, p.Effects[i].V = textar.Parse(subkvs, e.V), ""
+		subkvs, kvs[i].V = textar.Parse(subkvs[:0], e.V), ""
 		for _, kv := range subkvs {
 			if kv.K == p.Subkey {
 				kvs[i].V = kv.V
