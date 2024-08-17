@@ -153,9 +153,9 @@ func HTMLBuckets(buckets []Bucket, unchanged []string, contextLines int) string 
 	}
 
 	if len(unchanged) == 0 {
-		printf("<p>no unchanged keys</p>")
+		printf("<p>no unchanged effects</p>")
 	} else {
-		printf("<details><summary>%d unchanged keys</summary><ul>\n", len(unchanged))
+		printf("<details><summary>%d unchanged effects</summary><ul>\n", len(unchanged))
 		for _, k := range unchanged {
 			printf("  <li>%s\n", html.EscapeString(k))
 		}
