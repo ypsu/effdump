@@ -378,7 +378,7 @@ func (p *Params) Run(ctx context.Context) error {
 		fmt.Fprintf(p.Stdout, "Removed %d files from %s.\n", deletedFiles, p.tmpdir)
 		return nil
 	case "diff":
-		buckets, _, err := p.diff()
+		buckets, unchanged, err := p.diff()
 		if err != nil {
 			return fmt.Errorf("edmain/diff: %v", err)
 		}
@@ -386,7 +386,7 @@ func (p *Params) Run(ctx context.Context) error {
 			fmt.Fprintln(p.Stdout, "NOTE: No diffs.")
 			return nil
 		}
-		_, err = io.WriteString(p.Stdout, fmtdiff.UnifiedBuckets(buckets, p.Sepch[0], p.ContextLines, p.colorize))
+		_, err = io.WriteString(p.Stdout, fmtdiff.UnifiedBuckets(buckets, unchanged, p.Sepch[0], p.ContextLines, p.colorize))
 		if err != nil {
 			return fmt.Errorf("edmain/write unified diff: %v", err)
 		}

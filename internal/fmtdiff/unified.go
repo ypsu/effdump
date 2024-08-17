@@ -11,7 +11,7 @@ import (
 )
 
 // UnifiedBuckets formats a list of diff buckets into a textar.
-func UnifiedBuckets(buckets []Bucket, sepch byte, contextLines int, colorize bool) string {
+func UnifiedBuckets(buckets []Bucket, unchanged []string, sepch byte, contextLines int, colorize bool) string {
 	var kvs []keyvalue.KV
 	for bucketid, bucket := range buckets {
 		e := bucket.Entries[0]
@@ -37,6 +37,13 @@ func UnifiedBuckets(buckets []Bucket, sepch byte, contextLines int, colorize boo
 		}
 		kvs = append(kvs, keyvalue.KV{title, "\t" + strings.Join(keys, "\n\t") + "\n"})
 	}
+
+	tolist, title, extra := len(unchanged), fmt.Sprintf("(%d unchanged effects)", len(unchanged)), ""
+	if tolist >= 10 {
+		tolist, extra = 7, fmt.Sprintf("\t... (%d more entries)\n", len(unchanged)-7)
+	}
+	kvs = append(kvs, keyvalue.KV{title, "\t" + strings.Join(unchanged[:tolist], "\n\t") + "\n" + extra})
+
 	return textar.Format(kvs, sepch) + "\n"
 }
 
