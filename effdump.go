@@ -83,7 +83,7 @@ func (d *Dump) Run(ctx context.Context) {
 		}
 		if strings.HasPrefix(arg, "-") {
 			if positionalPart {
-				fmt.Fprintf(os.Stderr, "ERROR: %q looks like a flag as a positional argument; use the -flag=value syntax and use `--` on its own to separate flags from args.\n", arg)
+				fmt.Fprintf(os.Stderr, "ERROR: %q looks like a flag as a positional argument; put flags before the subcommand, use the -flag=value syntax, and use `--` on its own to separate flags from args.\n", arg)
 				os.Exit(1)
 			}
 		} else {
