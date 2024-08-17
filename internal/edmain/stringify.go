@@ -23,5 +23,5 @@ func Stringify(v any) string {
 	if err != nil {
 		return err.Error()
 	}
-	return string(js)
+	return string(js) + "\n"
 }
