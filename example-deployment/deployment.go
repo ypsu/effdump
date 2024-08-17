@@ -97,7 +97,7 @@ func run() error {
 		Name:       "$NAME",
 		BinaryFile: "examplebinary/prod",
 		CPURate:    4,
-		MemGB:      32,
+		MemGB:      48,
 		Alerting:   false,
 	})
 	prod := seq(active(true), alerting(true))

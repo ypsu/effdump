@@ -149,4 +149,70 @@ Pass the execution to the effdump library to do the rest:
 
 ## Examine the effdump
 
-TODO
+Print, say, dublin's full config:
+
+```
+$ go run github.com/ypsu/effdump/example-deployment print dublin
+=== dublin
+        {
+          "Active": true,
+          "Name": "dublin",
+          "Zone": "eu",
+          "BinaryFile": "examplebinary/prod",
+          "CPURate": 4,
+          "MemGB": 32,
+          "Alerting": true,
+          "Error": ""
+        }
+```
+
+Observe that effdump auto-jsonified the struct.
+Use printraw to get the json without any decoration:
+
+```
+$ go run github.com/ypsu/effdump/example-deployment printraw dublin
+{
+  "Active": true,
+  "Name": "dublin",
+  "Zone": "eu",
+  "BinaryFile": "examplebinary/prod",
+  "CPURate": 4,
+  "MemGB": 32,
+  "Alerting": true,
+  "Error": ""
+}
+```
+
+Suppose things got bigger and slower.
+Change the MemGB value to 48 in the template.
+Observe the diff:
+
+```
+$ go run github.com/ypsu/effdump/example-deployment diff
+=== dublin (changed, bucket 1)
+         {
+           "Active": true,
+           "Name": "dublin",
+           "Zone": "eu",
+           "BinaryFile": "examplebinary/prod",
+           "CPURate": 4,
+        -  "MemGB": 32,
+        +  "MemGB": 48,
+           "Alerting": true,
+           "Error": ""
+         }
+
+=== (omitted 4 similar diffs in bucket 1)
+        london
+        paris
+        staging
+        template
+
+=== (1 unchanged effects)
+        newyork
+```
+
+Observe how effdump deduplicated the diffs.
+Note that the newyork entry didn't have a diff because it has MemGB override to 64 GB at a later stage.
+
+See [../examples-markdown/README.md] for more features effdump provides such as HTML rendered diffs or continuous diffing.
