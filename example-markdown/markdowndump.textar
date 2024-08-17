@@ -1,0 +1,37 @@
+== paragraph
+This is a
+simple text.
+
+== list
+- This is
+- a
+- list
+  with multiple
+- entries.
+
+== preformatted
+  this is
+  a
+  preformatted
+  block.
+
+== combined
+This is a
+simple text.
+
+- This is
+- two
+
+- lists
+  with multiple
+- entries.
+
+  this is
+  two
+
+  preformatted
+  blocks.
+
+== html
+this paragraph
+contains <script src=foo.js></script> html hacks.
