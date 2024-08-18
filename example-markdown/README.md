@@ -117,9 +117,17 @@ $ go run github.com/ypsu/effdump/example-markdown print paragraph
 ## Make a change
 
 Once all the above is done, `git commit` the files.
-Then run `go run github.com/ypsu/effdump/example-markdown save` to save the current state of the file.
-The next `go run github.com/ypsu/effdump/example-markdown diff` will be diffing against this last commit's saved state.
+Then run `go run github.com/ypsu/effdump/example-markdown save` to save the current state of the dump into the tempdir.
+The next `go run github.com/ypsu/effdump/example-markdown diff` will be diffing against this last commit's saved state:
 
+```
+$ go run github.com/ypsu/effdump/example-markdown save
+effdump for 5bb49a8 saved to /tmp/effdump-1001-markdowndump/5bb49a8.gz.
+$ go run github.com/ypsu/effdump/example-markdown diff
+NOTE: No diffs.
+```
+
+There's no diff since the last save yet.
 Implement skeleton for a basic paragraph based markdown parser:
 
 ```
