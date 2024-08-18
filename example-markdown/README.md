@@ -7,7 +7,7 @@ In a more realistic scenario the `Markdown` function would be in a separate pack
 ## Define the test cases
 
 Let's develop this in the TDD fashion.
-Create a the test inputs first.
+Create the test inputs first.
 Keep them in one file, use https://github.com/ypsu/textar format for convenience:
 
 ```
