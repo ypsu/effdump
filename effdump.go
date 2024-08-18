@@ -8,8 +8,8 @@
 // effdump takes over the rest, it makes the package into a CLI tool.
 // See
 //
-// - https://github.com/ypsu/effdump/tree/main/example-markdown/README.md
-// - https://github.com/ypsu/effdump/tree/main/example-deployment/README.md
+//   - https://github.com/ypsu/effdump/tree/main/example-markdown/README.md
+//   - https://github.com/ypsu/effdump/tree/main/example-deployment/README.md
 //
 // for how exactly it works.
 package effdump
