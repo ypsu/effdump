@@ -172,7 +172,9 @@ $ go run github.com/ypsu/effdump/example-markdown diff paragraph
 The subcommand accepts a list of globs to print.
 The above sample asked it to print the diff of the `paragraph` key.
 
-Let's make sure the output is HTML.
+Now git commit that change and rerun `save` so that effdump can diff against the new HEAD's state.
+
+Next let's make sure the output is HTML.
 Add this to the Markdown function:
 
 ```
