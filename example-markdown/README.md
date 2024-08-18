@@ -88,7 +88,7 @@ Two notes:
 - To avoid dependencies this code does the test splitting on its own.
   https://github.com/ypsu/textar can be used in a more realistic scenario.
 - The dump values repeat the input string.
-  Seeing both the input and the corresponding output in one places makes the reviews simpler.
+  Seeing both the input and the corresponding output in one place makes the reviews simpler.
 
 And finally have effdump manage the dump:
 
