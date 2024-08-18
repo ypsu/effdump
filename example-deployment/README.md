@@ -28,7 +28,7 @@ type config struct {
 ```
 
 Each replica will be defined by such a struct.
-But to make things easy to describe in a succint manner, create a helper function for each attribute:
+But to make things easy to describe in a succinct manner, create a helper function for each attribute:
 
 ```
 func reset(v config) func(*config) {
@@ -213,6 +213,7 @@ $ go run github.com/ypsu/effdump/example-deployment diff
 ```
 
 Observe how effdump deduplicated the diffs.
-Note that the newyork entry didn't have a diff because it has MemGB override to 64 GB at a later stage.
+Note that the newyork entry didn't have a diff because it has a MemGB override to 64 GB at a later stage.
+Diffs like these are the main feature of effdump.
 
-See [../examples-markdown/README.md] for more features effdump provides such as HTML rendered diffs or continuous diffing.
+See https://github.com/ypsu/effdump/tree/main/example-markdown/README.md for more features effdump provides such as HTML rendered diffs or continuous diffing.

@@ -4,9 +4,14 @@
 // It can render the diffs both in unified and HTML format and deduplicates the individual diffs.
 // Convenient CLI usage is the module's main design goal.
 //
-// To use it create a new dump with [New], [Add] a bunch of key/value pairs, and call [Run].
+// To use it create a new dump with [New], [Dump.Add] a bunch of key/value pairs, and call [Dump.Run].
 // effdump takes over the rest, it makes the package into a CLI tool.
-// See https://github.com/ypsu/effdump/tree/main/example-markdown/README.md and https://github.com/ypsu/effdump/tree/main/example-deployment/README.md for how exactly it works.
+// See
+//
+// - https://github.com/ypsu/effdump/tree/main/example-markdown/README.md
+// - https://github.com/ypsu/effdump/tree/main/example-deployment/README.md
+//
+// for how exactly it works.
 package effdump
 
 import (
