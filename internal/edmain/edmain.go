@@ -186,7 +186,7 @@ func (p *Params) diff() (buckets []fmtdiff.Bucket, unchanged []string, err error
 	fname := filepath.Join(p.tmpdir, p.version) + ".gz"
 	buf, err := os.ReadFile(fname)
 	if err != nil && errors.Is(err, os.ErrNotExist) {
-		return nil, nil, fmt.Errorf("edmain/load dump: effdump for commit %v not found, git stash and save that version first", p.version)
+		return nil, nil, fmt.Errorf("edmain/load dump: effdump for commit %v not found, git stash and save that version first or use -force", p.version)
 	}
 	if err != nil {
 		return nil, nil, fmt.Errorf("edmain/load dump: %v", err)
