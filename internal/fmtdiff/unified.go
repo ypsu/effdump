@@ -6,11 +6,11 @@ import (
 	"strings"
 
 	"github.com/ypsu/effdump/internal/andiff"
+	"github.com/ypsu/effdump/internal/edtextar"
 	"github.com/ypsu/effdump/internal/keyvalue"
-	"github.com/ypsu/effdump/internal/textar"
 )
 
-// UnifiedBuckets formats a list of diff buckets into a textar.
+// UnifiedBuckets formats a list of diff buckets into a edtextar.
 func UnifiedBuckets(buckets []Bucket, unchanged []string, sepch byte, contextLines int, colorize bool) string {
 	var kvs []keyvalue.KV
 	for bucketid, bucket := range buckets {
@@ -44,7 +44,7 @@ func UnifiedBuckets(buckets []Bucket, unchanged []string, sepch byte, contextLin
 	}
 	kvs = append(kvs, keyvalue.KV{title, "\t" + strings.Join(unchanged[:tolist], "\n\t") + "\n" + extra})
 
-	return textar.Format(kvs, sepch) + "\n"
+	return edtextar.Format(kvs, sepch) + "\n"
 }
 
 // Unified returns unified diff, suitable for terminal output.

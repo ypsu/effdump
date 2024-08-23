@@ -1,11 +1,11 @@
-package textar_test
+package edtextar_test
 
 import (
 	"slices"
 	"testing"
 
+	"github.com/ypsu/effdump/internal/edtextar"
 	"github.com/ypsu/effdump/internal/keyvalue"
-	"github.com/ypsu/effdump/internal/textar"
 )
 
 func TestAr(t *testing.T) {
@@ -15,8 +15,8 @@ func TestAr(t *testing.T) {
 		{"", "this has no name\n--- and has 3 dashes too\n"},
 		{"last", "entry"},
 	}
-	ar := textar.Format(src, '=')
-	dst := textar.Parse(nil, ar)
+	ar := edtextar.Format(src, '=')
+	dst := edtextar.Parse(nil, ar)
 	if !slices.Equal(src, dst) {
 		t.Errorf("Error self-decoding, archive:\n%s\ndecoded into this:\n%q", ar, dst)
 		for i := 0; i < min(len(src), len(dst)); i++ {

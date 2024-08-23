@@ -1,5 +1,6 @@
-// Package textar (TEXT ARchive) encodes/decodes key value string pairs into/from one large string.
-package textar
+// Package edtextar (EffDump TEXT ARchive) encodes/decodes key value string pairs into/from one large string.
+// This is a simplified version of https://github.com/ypsu/textar to avoid the unnecessary dependency.
+package edtextar
 
 import (
 	"strings"

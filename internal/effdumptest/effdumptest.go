@@ -18,9 +18,9 @@ import (
 	"github.com/ypsu/effdump/internal/andiff"
 	"github.com/ypsu/effdump/internal/edbg"
 	"github.com/ypsu/effdump/internal/edmain"
+	"github.com/ypsu/effdump/internal/edtextar"
 	"github.com/ypsu/effdump/internal/fmtdiff"
 	"github.com/ypsu/effdump/internal/keyvalue"
-	"github.com/ypsu/effdump/internal/textar"
 )
 
 //go:embed *.textar
@@ -76,7 +76,7 @@ func mkdump() (*effdump.Dump, error) {
 	addglob("special-three", "*apple", "*ba*na*na", "cherry*", "da.|?[a-z]te")
 
 	// Test the differ.
-	diffar := textar.Parse(nil, testdata("trickydiffs.textar"))
+	diffar := edtextar.Parse(nil, testdata("trickydiffs.textar"))
 	for _, kv := range diffar {
 		lt, rt := &strings.Builder{}, &strings.Builder{}
 		name, args, _ := strings.Cut(kv.K, " ")
@@ -118,7 +118,7 @@ func mkdump() (*effdump.Dump, error) {
 		}
 		kvs = append(kvs, keyvalue.KV{"diff", w.String()})
 		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff, 3, false)})
-		d.Add("diffs/"+name+".txt", textar.Format(kvs, '-'))
+		d.Add("diffs/"+name+".txt", edtextar.Format(kvs, '-'))
 		buckets := []fmtdiff.Bucket{{Entries: []fmtdiff.Entry{{Name: "html", Diff: diff}}}}
 		d.Add("diffs/"+name+".html", fmtdiff.HTMLBuckets(buckets, nil, 3))
 	}
@@ -128,7 +128,7 @@ func mkdump() (*effdump.Dump, error) {
 	fetchVersion, fetchDirty, fetchErr := "numsbase", false, error(nil)
 	baseParams := edmain.Params{
 		Name:    "testdump",
-		Effects: textar.Parse(nil, testdata("numsbase.textar")),
+		Effects: edtextar.Parse(nil, testdata("numsbase.textar")),
 		Env:     []string{"EFFDUMP_DIR=" + tmpdir},
 		Stdout:  w,
 
@@ -171,16 +171,16 @@ func mkdump() (*effdump.Dump, error) {
 			kvs = append(kvs, keyvalue.KV{"debuglog", debuglog.String()})
 			debuglog.Reset()
 		}
-		d.Add(key, textar.Format(kvs, '~'))
+		d.Add(key, edtextar.Format(kvs, '~'))
 
 		// Reset defaults for the next testcase.
 		p, fetchVersion, fetchDirty = baseParams, "numsbase", false
-		p.Effects = textar.Parse(nil, testdata("numsbase.textar"))
+		p.Effects = edtextar.Parse(nil, testdata("numsbase.textar"))
 	}
 	setdesc := func(name, description string) { key, desc = fmt.Sprintf("%s/%s", group, name), description }
 
 	// The baseline for the following tests will be numsbase.
-	numsbase := textar.Parse(nil, testdata("numsbase.textar"))
+	numsbase := edtextar.Parse(nil, testdata("numsbase.textar"))
 	gz, err := edmain.Compress(numsbase, '=', edmain.Hash(numsbase))
 	if err != nil {
 		return nil, fmt.Errorf("effdumptest/compress numsbase: %v", err)
@@ -242,22 +242,22 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
 	run("diff")
 	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("diff")
 	setdesc("changed-no-context", "Diffing without context.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("-context=0", "diff")
 	setdesc("changed-with-template", "This is a rename example with a -template flag.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("-template=odd", "diff", "prime*")
 	setdesc("changed-with-color", "Diffing base against changed but with colorization enabled.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("-color=yes", "diff")
 	setdesc("changed-rmall", "Diffing base against changed with a .* removal regex.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("-x=.*", "diff")
 	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'even'.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("diff", "even*")
 	setdesc("nonexistent-baseline", "Diffing against a baseline that doesn't exist.")
 	fetchVersion = "nonexistent"
@@ -304,26 +304,26 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
 	run("diffkeys")
 	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("diffkeys")
 	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'even'.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("diffkeys", "even*")
 
 	group = "cmd-htmldiff"
 	setdesc("base-no-args", "Diffing base against base without args should have no diff.")
 	run("htmldiff")
 	setdesc("changed-no-args", "Diffing base against changed without args should print all diffs.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("htmldiff")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	setdesc("changed-no-context", "Diffing without context.")
 	run("-context=0", "htmldiff")
 	setdesc("changed-rmall", "Diffing base against changed with a .* removal regex.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("-x=.*", "htmldiff")
 	setdesc("changed-glob-arg", "Diffing base against changed with a glob should print all diffs for effects starting with 'ht'.")
-	p.Effects = textar.Parse(nil, testdata("numschanged.textar"))
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("htmldiff", "ht*")
 	setdesc("large", "Diffing large number of similar diffs.")
 	fetchVersion, p.Effects = "seqkvs", seqkvs

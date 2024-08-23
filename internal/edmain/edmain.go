@@ -23,9 +23,9 @@ import (
 
 	"github.com/ypsu/effdump/internal/andiff"
 	"github.com/ypsu/effdump/internal/edbg"
+	"github.com/ypsu/effdump/internal/edtextar"
 	"github.com/ypsu/effdump/internal/fmtdiff"
 	"github.com/ypsu/effdump/internal/keyvalue"
-	"github.com/ypsu/effdump/internal/textar"
 
 	_ "embed"
 )
@@ -251,7 +251,7 @@ func (p *Params) subkeyize(kvs []keyvalue.KV) {
 	}
 	subkvs := make([]keyvalue.KV, 0, 4)
 	for i, e := range kvs {
-		subkvs, kvs[i].V = textar.Parse(subkvs[:0], e.V), ""
+		subkvs, kvs[i].V = edtextar.Parse(subkvs[:0], e.V), ""
 		for _, kv := range subkvs {
 			if kv.K == p.Subkey {
 				kvs[i].V = kv.V
@@ -445,7 +445,7 @@ func (p *Params) Run(ctx context.Context) error {
 				kvs[i].V = "\t" + strings.ReplaceAll(e.V, "\n", "\n\t")
 			}
 		}
-		fmt.Fprintln(p.Stdout, textar.Format(kvs, p.Sepch[0]))
+		fmt.Fprintln(p.Stdout, edtextar.Format(kvs, p.Sepch[0]))
 		return nil
 	case "printraw":
 		if len(args) != 1 {

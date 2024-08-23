@@ -7,8 +7,8 @@ import (
 	"io"
 	"strings"
 
+	"github.com/ypsu/effdump/internal/edtextar"
 	"github.com/ypsu/effdump/internal/keyvalue"
-	"github.com/ypsu/effdump/internal/textar"
 )
 
 const (
@@ -34,7 +34,7 @@ func Compress(kvs []keyvalue.KV, sepch byte, hash uint64) (data []byte, err erro
 	}
 
 	buf := &bytes.Buffer{}
-	ar, w := textar.Format([]keyvalue.KV(kvs), sepch), gzip.NewWriter(buf)
+	ar, w := edtextar.Format([]keyvalue.KV(kvs), sepch), gzip.NewWriter(buf)
 	w.Header.Comment = fmt.Sprintf("effdump %d %d %016x", len(kvs), len(ar), hash)
 	_, err = io.Copy(w, strings.NewReader(ar))
 	if err != nil {
@@ -67,7 +67,7 @@ func Uncompress(data []byte) ([]keyvalue.KV, error) {
 	if limr.N == 0 {
 		return nil, fmt.Errorf("edmain/decompress limit: decompress reached the limit of %d MB", maxTotalBytes/1e6)
 	}
-	return textar.Parse(kvs, w.String()), nil
+	return edtextar.Parse(kvs, w.String()), nil
 }
 
 // PeekHash returns the hash stored in the gzip header.
