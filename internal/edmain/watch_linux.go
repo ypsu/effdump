@@ -76,8 +76,8 @@ func fittedPrint(s []byte) {
 // startcmd starts command and returns its output.
 // The resulting subprocess must be collected via the returned kill command.
 // It first compiles the command into edbin and then runs it with the specified args.
-func startcmd(gobin, edpkg, edbin string, argv []string, env []string) (output []byte, kill func()) {
-	compilerOutput, err := exec.Command(gobin, "build", "-o="+edbin, edpkg).CombinedOutput()
+func startcmd(gobin, edpkg, edbin, tags string, argv []string, env []string) (output []byte, kill func()) {
+	compilerOutput, err := exec.Command(gobin, "build", "-tags="+tags, "-o="+edbin, edpkg).CombinedOutput()
 	if err != nil {
 		return compilerOutput, func() {}
 	}
@@ -197,6 +197,12 @@ func (p *Params) watch(ctx context.Context) error {
 	if bi.Path == "command-line-arguments" {
 		return fmt.Errorf("edmain/check target: go run target must be of form yourmodule/yourpackage, specifying .go files directly is not supported")
 	}
+	var tags string
+	for _, setting := range bi.Settings {
+		if setting.Key == "-tags" {
+			tags = setting.Value
+		}
+	}
 
 	gobin, err := exec.LookPath("go")
 	if err != nil {
@@ -213,7 +219,7 @@ func (p *Params) watch(ctx context.Context) error {
 
 	for ctx.Err() == nil {
 		fmt.Fprintf(os.Stderr, "compiling... ")
-		output, kill := startcmd(gobin, bi.Path, edbin, os.Args[1:], env)
+		output, kill := startcmd(gobin, bi.Path, edbin, tags, os.Args[1:], env)
 		fittedPrint(output)
 		select {
 		case <-fsch:
