@@ -6,6 +6,7 @@ import (
 	"embed"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -30,6 +31,7 @@ func addStringifyEffects(d *effdump.Dump) {
 	d.Add("stringify/int", 42)
 	d.Add("stringify/byte", 'a')
 	d.Add("stringify/stringer", time.UnixMilli(0).UTC())
+	d.Add("stringify/error", io.EOF)
 	d.Add("stringify/string", "hello world")
 	d.Add("stringify/multiline-string", "this\nis\na\nmultiline\nstring\n")
 	d.Add("stringify/int-slice", []int{1, 2, 3, 4, 5})
