@@ -76,7 +76,7 @@ func fittedPrint(s []byte) {
 // startcmd starts command and returns its output.
 // The resulting subprocess must be collected via the returned kill command.
 // It first compiles the command into edbin and then runs it with the specified args.
-func startcmd(gobin, edpkg, edbin, tags string, argv []string, env []string) (output []byte, kill func()) {
+func startcmd(gobin, edpkg, edbin, tags string, argv []string, env []string, sigch <-chan os.Signal) (output []byte, kill func()) {
 	compilerOutput, err := exec.Command(gobin, "build", "-tags="+tags, "-o="+edbin, edpkg).CombinedOutput()
 	if err != nil {
 		return compilerOutput, func() {}
@@ -105,7 +105,13 @@ func startcmd(gobin, edpkg, edbin, tags string, argv []string, env []string) (ou
 		return fmt.Appendf(nil, "ERROR: effdump: start subprocess: %v.\n", err), func() {}
 	}
 	pw.Close()
-	<-iodone
+	select {
+	case <-iodone:
+	case <-sigch:
+		syscall.Kill(-process.Pid, syscall.SIGINT)
+		process.Wait()
+		return []byte("Error: subprocess interrupted with SIGINT.\n"), func() {}
+	}
 
 	if !bytes.HasSuffix(buf.Bytes(), []byte("\n")) {
 		buf.WriteByte('\n')
@@ -220,7 +226,7 @@ func (p *Params) watch(ctx context.Context) error {
 	argv := append([]string{p.Name}, p.Args...)
 	for ctx.Err() == nil {
 		fmt.Fprintf(os.Stderr, "compiling... ")
-		output, kill := startcmd(gobin, bi.Path, edbin, tags, argv, env)
+		output, kill := startcmd(gobin, bi.Path, edbin, tags, argv, env, sigch)
 		fittedPrint(output)
 		select {
 		case <-fsch:
