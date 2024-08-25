@@ -217,9 +217,10 @@ func (p *Params) watch(ctx context.Context) error {
 	fsch := make(chan bool, 64)
 	go reportchanges(fsch)
 
+	argv := append([]string{p.Name}, p.Args...)
 	for ctx.Err() == nil {
 		fmt.Fprintf(os.Stderr, "compiling... ")
-		output, kill := startcmd(gobin, bi.Path, edbin, tags, os.Args[1:], env)
+		output, kill := startcmd(gobin, bi.Path, edbin, tags, argv, env)
 		fittedPrint(output)
 		select {
 		case <-fsch:
