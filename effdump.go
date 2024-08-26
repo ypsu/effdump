@@ -77,6 +77,15 @@ func (d *Dump) Hash() uint64 {
 
 // RegisterFlags registers effdump's flags into a flagset.
 // If not called, flags are autoregistered into flag.CommandLine in Run().
+// Usage example:
+//
+//	d := effdump.New("mydump")
+//	d.RegisterFlags(flag.CommandLine)
+//	myflag := flag.String("custominput", "", "If specified, runs mydump with this custom input.")
+//	flag.Parse()
+//	if *myflag { ... }
+//	...
+//	d.Run(ctx)
 func (d *Dump) RegisterFlags(fs *flag.FlagSet) {
 	d.registeredFlags = true
 	d.params.RegisterFlags(fs)
