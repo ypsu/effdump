@@ -12,6 +12,7 @@
 //   - https://github.com/ypsu/effdump/tree/main/example-deployment/README.md
 //
 // for how exactly it works.
+// See the testing part of https://github.com/ypsu/pkgtrim for a more realistic example.
 package effdump
 
 import (
