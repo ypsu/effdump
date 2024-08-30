@@ -28,7 +28,7 @@ type config struct {
 ```
 
 Each replica will be defined by such a struct.
-But to make things easy to describe in a succinct manner, create a helper function for each attribute:
+But to make things easy to describe in a succinct manner, create a helper function for each attribute (these are called [functional options](https://dave.cheney.net/2014/10/17/functional-options-for-friendly-apis)):
 
 ```
 func reset(v config) func(*config) {
