@@ -115,10 +115,15 @@ func mkdump() (*effdump.Dump, error) {
 		}
 		w := &strings.Builder{}
 		kvs = append(kvs, keyvalue.KV{"input", kv.V})
+		fmt.Fprintf(w, "Hash: 0x%016x\n", diff.Hash)
 		for _, op := range diff.Ops {
 			fmt.Fprintf(w, "%+v\n", op)
 		}
 		kvs = append(kvs, keyvalue.KV{"diff", w.String()})
+		if debuglog.Len() > 0 {
+			kvs = append(kvs, keyvalue.KV{"debuglog", debuglog.String()})
+			debuglog.Reset()
+		}
 		kvs = append(kvs, keyvalue.KV{"unified", fmtdiff.Unified(diff, 3, false)})
 		d.Add("diffs/"+name+".txt", edtextar.Format(kvs, '-'))
 		buckets := []fmtdiff.Bucket{{Entries: []fmtdiff.Entry{{Name: "html", Diff: diff}}}}
