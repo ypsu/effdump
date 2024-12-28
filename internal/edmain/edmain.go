@@ -488,6 +488,16 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 }
 
+func localIP() net.IP {
+	conn, err := net.Dial("udp", "8.8.8.8:80")
+	if err != nil {
+		return net.IP{}
+	}
+	localAddr := conn.LocalAddr().(*net.UDPAddr)
+	conn.Close()
+	return localAddr.IP
+}
+
 func (p *Params) serve(ctx context.Context, s string) error {
 	t := time.Now()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
@@ -497,7 +507,12 @@ func (p *Params) serve(ctx context.Context, s string) error {
 	if err != nil {
 		return fmt.Errorf("edmain/listen on %s: %v", p.Address, err)
 	}
-	fmt.Fprintf(os.Stderr, "Serving HTTP on %s.\n", p.Address)
+
+	addr := p.Address
+	if strings.HasPrefix(addr, ":") {
+		addr += fmt.Sprintf(" (%v%s)", localIP(), addr)
+	}
+	fmt.Fprintf(os.Stderr, "Serving HTTP on %s.\n", addr)
 	p.notifyWatcher() // Tell watcher (if any) that the output is ready.
 
 	serverErr := make(chan error)
