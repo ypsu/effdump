@@ -84,16 +84,16 @@ func HTMLBuckets(buckets []Bucket, unchanged []string, contextLines int) string 
 				for i, k := 0, min(op.Del, op.Add); i < k; i++ {
 					printf("    <tr>\n")
 					printf("      <td class='cNum cbgNegative'>%d</td>\n", xi+1)
-					printf("      <td class='cLeft cbgNegative'>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class='cLeft cbgNegative'>%s\n</td>\n", html.EscapeString(x[xi]))
 					printf("      <td class='cNum cbgPositive'>%d</td>\n", yi+1)
-					printf("      <td class='cRight cbgPositive'>%s</td>\n", html.EscapeString(y[yi]))
+					printf("      <td class='cRight cbgPositive'>%s\n</td>\n", html.EscapeString(y[yi]))
 					xi, yi = xi+1, yi+1
 				}
 
 				for i, k := op.Add, op.Del; i < k; i++ {
 					printf("    <tr>\n")
 					printf("      <td class='cNum cbgNegative'>%d</td>\n", xi+1)
-					printf("      <td class='cLeft cbgNegative'>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class='cLeft cbgNegative'>%s\n</td>\n", html.EscapeString(x[xi]))
 					printf("      <td class='cNum cbgNeutral'> </td>\n")
 					printf("      <td class='cRight cbgNeutral'></td>\n")
 					xi++
@@ -104,7 +104,7 @@ func HTMLBuckets(buckets []Bucket, unchanged []string, contextLines int) string 
 					printf("      <td class='cNum cbgNeutral'> </td>\n")
 					printf("      <td class='cLeft cbgNeutral'></td>\n")
 					printf("      <td class='cNum cbgPositive'>%d</td>\n", yi+1)
-					printf("      <td class='cRight cbgPositive'>%s</td>\n", html.EscapeString(y[yi]))
+					printf("      <td class='cRight cbgPositive'>%s\n</td>\n", html.EscapeString(y[yi]))
 					yi++
 				}
 
@@ -112,9 +112,9 @@ func HTMLBuckets(buckets []Bucket, unchanged []string, contextLines int) string 
 				for i, k := 0, pre; i < k; i++ {
 					printf("    <tr>\n")
 					printf("      <td class=cNum>%d</td>\n", xi+1)
-					printf("      <td class=cLeft>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class=cLeft>%s\n</td>\n", html.EscapeString(x[xi]))
 					printf("      <td class=cNum>%d</td>\n", yi+1)
-					printf("      <td class=cRight>%s</td>\n", html.EscapeString(y[yi]))
+					printf("      <td class=cRight>%s\n</td>\n", html.EscapeString(y[yi]))
 					xi, yi = xi+1, yi+1
 				}
 				if zipped > 0 {
@@ -128,18 +128,18 @@ func HTMLBuckets(buckets []Bucket, unchanged []string, contextLines int) string 
 					for i, k := 0, zipped; i < k; i++ {
 						printf("    <tr hidden>\n")
 						printf("      <td class=cNum>%d</td>\n", xi+1)
-						printf("      <td class=cLeft>%s</td>\n", html.EscapeString(x[xi]))
+						printf("      <td class=cLeft>%s\n</td>\n", html.EscapeString(x[xi]))
 						printf("      <td class=cNum>%d</td>\n", yi+1)
-						printf("      <td class=cRight>%s</td>\n", html.EscapeString(y[yi]))
+						printf("      <td class=cRight>%s\n</td>\n", html.EscapeString(y[yi]))
 						xi, yi = xi+1, yi+1
 					}
 				}
 				for i, k := 0, post; i < k; i++ {
 					printf("    <tr>\n")
 					printf("      <td class=cNum>%d</td>\n", xi+1)
-					printf("      <td class=cLeft>%s</td>\n", html.EscapeString(x[xi]))
+					printf("      <td class=cLeft>%s\n</td>\n", html.EscapeString(x[xi]))
 					printf("      <td class=cNum>%d</td>\n", yi+1)
-					printf("      <td class=cRight>%s</td>\n", html.EscapeString(y[yi]))
+					printf("      <td class=cRight>%s\n</td>\n", html.EscapeString(y[yi]))
 					xi, yi = xi+1, yi+1
 				}
 			}
