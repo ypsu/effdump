@@ -127,6 +127,14 @@ func Compute(lt, rt string, rmregexp *regexp.Regexp) Diff {
 				same++
 			}
 			if same > 0 {
+				for i := xi; i < txi; i++ {
+					h.Write([]byte("\n-"))
+					h.Write([]byte(x[i]))
+				}
+				for i := yi; i < tyi; i++ {
+					h.Write([]byte("\n+"))
+					h.Write([]byte(y[i]))
+				}
 				ops, xi, yi, txi, tyi = append(ops, Op{txi - xi, tyi - yi, same}), txi+same, tyi+same, txi+same, tyi+same
 			}
 		}
