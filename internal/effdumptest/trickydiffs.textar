@@ -964,3 +964,79 @@
  a
  b
  c
+
+=== 60
+ -- input:
+
+ # A title
+
+ Paragraph 1.
+
+ Paragraph 2
+ with
+ more
+ lines.
+
+ And a final
+ third
+ paragraph.
+
+
+ -- output:
+
+-<p>
++<h1>
+ # A title
+-</p>
++</h1>
+
+ <p>
+ Paragraph 1.
+ </p>
+
+ <p>
+ Paragraph 2
+ with
+ more
+ lines.
+ </p>
+
+ <p>
+ And a final
+ third
+ paragraph.
+ </p>
+
+=== 61
+ -- input:
+
+ # Title 1
+
+ Content 1.
+
+ # Title 2
+
+ Content 2.
+
+
+ -- output:
+
+-<p>
++<h1>
+ # Title 1
+-</p>
++</h1>
+
+ <p>
+ Content 1.
+ </p>
+
+-<p>
++<h1>
+ # Title 2
+-</p>
++</h1>
+
+ <p>
+ Content 2.
+ </p>
