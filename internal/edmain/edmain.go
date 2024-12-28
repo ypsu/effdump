@@ -488,7 +488,7 @@ func (p *Params) Run(ctx context.Context) error {
 	}
 }
 
-func (p *Params) serve(_ context.Context, s string) error {
+func (p *Params) serve(ctx context.Context, s string) error {
 	t := time.Now()
 	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
 		http.ServeContent(w, req, "", t, strings.NewReader(s))
@@ -499,7 +499,18 @@ func (p *Params) serve(_ context.Context, s string) error {
 	}
 	fmt.Fprintf(os.Stderr, "Serving HTTP on %s.\n", p.Address)
 	p.notifyWatcher() // Tell watcher (if any) that the output is ready.
-	return http.Serve(listener, handler)
+
+	serverErr := make(chan error)
+	go func() {
+		serverErr <- http.Serve(listener, handler)
+	}()
+
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-serverErr:
+		return err
+	}
 }
 
 // MakeRE makes a single regex from a set of globs.
