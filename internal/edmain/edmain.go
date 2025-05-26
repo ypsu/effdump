@@ -46,6 +46,7 @@ type Params struct {
 	Color        string
 	ContextLines int
 	Force        bool
+	Keyptr       string
 	Revision     string
 	Sepch        string
 	Subkey       string
@@ -108,6 +109,7 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.Color, "color", "auto", "Whether to colorize the output. Valid values: auto|yes|no.")
 	fs.IntVar(&p.ContextLines, "context", 3, "Print this amount of diff context.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
+	fs.StringVar(&p.Keyptr, "keyptr", "", "Print or diff key defined in this key.")
 	fs.StringVar(&p.Revision, "rev", "", "Use a given revision's name as the version. Defaults to HEAD revision.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 	fs.StringVar(&p.Subkey, "subkey", "",

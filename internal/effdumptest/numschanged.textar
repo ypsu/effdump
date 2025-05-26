@@ -36,6 +36,9 @@ just to confirm that </script> doesn't break the result.
 and that a \n doesn't insert a real newline into the output.
 here's more: &\<>;'".
 
+--- html.ptr
+html
+
 --- many
 10
 11

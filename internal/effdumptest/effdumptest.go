@@ -203,6 +203,8 @@ func mkdump() (*effdump.Dump, error) {
 	group = "cmd-print"
 	setdesc("no-args", "Printing without args should print all the effects.")
 	run("print")
+	setdesc("keyptr", "Printing with -keyptr should print only the target effect.")
+	run("-keyptr=html.ptr", "print")
 	setdesc("two-args", "Printing without args should print only the even and odd effects.")
 	run("print", "even", "odd")
 	setdesc("oddglob-arg", "Printing without args should print all effects starting with 'o*'.")
@@ -254,6 +256,9 @@ func mkdump() (*effdump.Dump, error) {
 	setdesc("changed-no-context", "Diffing without context.")
 	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("-context=0", "diff")
+	setdesc("keyptr", "Diff with -keyptr should diff only the target effect.")
+	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
+	run("-keyptr=html.ptr", "diff")
 	setdesc("changed-with-template", "This is a rename example with a -template flag.")
 	p.Effects = edtextar.Parse(nil, testdata("numschanged.textar"))
 	run("-template=odd", "diff", "prime*")
