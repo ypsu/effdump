@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
@@ -109,7 +110,16 @@ func startcmd(ctx context.Context, gobin, edpkg, edbin, tags string, argv []stri
 	case <-iodone:
 	case <-sigch:
 		syscall.Kill(-process.Pid, syscall.SIGINT)
+		killed := atomic.Bool{}
+		go func() {
+			time.Sleep(time.Second)
+			syscall.Kill(-process.Pid, syscall.SIGKILL)
+			killed.Store(true)
+		}()
 		process.Wait()
+		if killed.Load() {
+			return []byte("Error: subprocess killed with SIGKILL.\n"), func() {}
+		}
 		return []byte("Error: subprocess interrupted with SIGINT.\n"), func() {}
 	}
 
