@@ -239,6 +239,9 @@ func (p *Params) watch(ctx context.Context) error {
 		case <-sigch:
 			kill()
 			return fmt.Errorf("edmain/watch: signal interrupt")
+		case <-ctx.Done():
+			kill()
+			return fmt.Errorf("edmain/watch: context done: %v", ctx.Err())
 		}
 	}
 	return ctx.Err()
