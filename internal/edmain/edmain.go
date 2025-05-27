@@ -109,7 +109,7 @@ func (p *Params) RegisterFlags(fs *flag.FlagSet) {
 	fs.StringVar(&p.Color, "color", "auto", "Whether to colorize the output. Valid values: auto|yes|no.")
 	fs.IntVar(&p.ContextLines, "context", 3, "Print this amount of diff context.")
 	fs.BoolVar(&p.Force, "force", false, "Force a save even from unclean directory.")
-	fs.StringVar(&p.Keyptr, "keyptr", "", "Print or diff key defined in this key.")
+	fs.StringVar(&p.Keyptr, "keyptr", "", "Print or diff keys defined by the globs in this key from the right side. Makes it possible what to diff from the source code itself.")
 	fs.StringVar(&p.Revision, "rev", "", "Use a given revision's name as the version. Defaults to HEAD revision.")
 	fs.StringVar(&p.Sepch, "sepch", "=", "Use this character as the entry separator in the output textar.")
 	fs.StringVar(&p.Subkey, "subkey", "",
@@ -345,6 +345,16 @@ func (p *Params) Run(ctx context.Context) error {
 	p.filter = MakeRE(args...)
 
 	slices.SortFunc(p.Effects, func(a, b keyvalue.KV) int { return cmp.Compare(a.K, b.K) })
+	if p.Keyptr != "" {
+		if len(args) > 0 {
+			return fmt.Errorf("edmain/keyptrArgs: using -keyptr and positional arguments at the same time is unsupported")
+		}
+		i, ok := slices.BinarySearchFunc(p.Effects, p.Keyptr, func(e keyvalue.KV, v string) int { return cmp.Compare(e.K, v) })
+		if !ok {
+			return fmt.Errorf("edmain/keyptr: effect %q not found", p.Keyptr)
+		}
+		p.filter = MakeRE(strings.Fields(p.Effects[i].V)...)
+	}
 	p.Effects = slices.DeleteFunc(p.Effects, func(kv keyvalue.KV) bool { return !p.filter.MatchString(kv.K) })
 	for i := 1; i < len(p.Effects); i++ {
 		if p.Effects[i].K == p.Effects[i-1].K {

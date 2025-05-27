@@ -13,6 +13,7 @@ import (
 	"path/filepath"
 	"runtime/debug"
 	"strconv"
+	"strings"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -233,7 +234,12 @@ func (p *Params) watch(ctx context.Context) error {
 	fsch := make(chan bool, 64)
 	go reportchanges(fsch)
 
-	argv := append([]string{p.Name}, p.Args...)
+	argv := []string{p.Name}
+	for _, arg := range os.Args[1:] {
+		if !strings.HasPrefix(arg, "-watch") && !strings.HasPrefix(arg, "--watch") {
+			argv = append(argv, arg)
+		}
+	}
 	for ctx.Err() == nil {
 		fmt.Fprintf(os.Stderr, "compiling... ")
 		output, kill := startcmd(ctx, gobin, bi.Path, edbin, tags, argv, env, sigch)
