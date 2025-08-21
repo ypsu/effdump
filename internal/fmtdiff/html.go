@@ -52,10 +52,10 @@ func HTMLBuckets(buckets []Bucket, unchanged []string, contextLines int) string 
 	for _, bucket := range buckets {
 		for _, e := range bucket.Entries {
 			for _, line := range e.Diff.LT {
-				width = max(width, len(line))
+				width = max(width, len(line)+strings.Count(line, "\t")*7)
 			}
 			for _, line := range e.Diff.RT {
-				width = max(width, len(line))
+				width = max(width, len(line)+strings.Count(line, "\t")*7)
 			}
 		}
 	}
